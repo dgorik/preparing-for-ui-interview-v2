@@ -16,31 +16,19 @@
 //   }
 // }
 
-export function debounce <F extends (...args: any[]) => void>(fn:F, delay:number){
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
-  return function debounced(this: unknown, ...args: Parameters<F>):void{
-    if(timeoutId){
-      clearTimeout(timeoutId)
-    }
+export function debounce<T extends (...args: any[]) => void>(
+  fn: T,
+  delay: number,
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+  return function (this: any, ...args: Parameters<T>) {
+    clearTimeout(timeoutId)
     timeoutId = setTimeout(() => {
       fn.apply(this, args)
-      timeoutId = null
-    },delay)
+    }, delay)
   }
 }
-
-export function throttle <F extends (...args: any[]) => void>(fn: F, delay: number) {
-  let lastCallTime: number = 0
-  return function throttled(this: unknown, ...args: Parameters<F>): void {
-    const now = Date.now()
-    if (now - lastCallTime >= delay) {
-      lastCallTime = now
-      fn.apply(this, args)
-    }
-  }
-}
-
-
 // --- Examples ---
 // Uncomment to test your implementation:
 
