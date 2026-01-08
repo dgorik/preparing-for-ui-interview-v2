@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { ProgressBar } from '../progress-bar/progress-bar.react';
 import css from './upload-component.module.css';
-import flex from '../../utilities/flex.module.css';
-import { cx } from '../../utilities/utility';
+import flex from '@course/styles';
+import cx from '@course/cx';
 import { useFileUpload } from './use-upload';
 
 export const UploadComponent = () => {

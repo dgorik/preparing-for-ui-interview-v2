@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import flex from "../../utilities/flex.module.css";
+import flex from "@course/styles";
 import { StarRatingComponent } from "./star-rating.react";
 import { StarRating } from "./star-rating";
 

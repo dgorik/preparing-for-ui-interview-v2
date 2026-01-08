@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { HeatmapCanvasComponent, type HeatmapCanvasHandle } from "./heatmap-canvas.react";
-import flex from "../../utilities/flex.module.css";
+import flex from "@course/styles";
 
 export const HeatmapCanvasExample = () => {
     const handleRef = useRef<HeatmapCanvasHandle>(null);

@@ -24,7 +24,7 @@ export type TComponentConfig<T extends object> = T & {
     /** The parent HTMLElement where the component will be mounted */
     root: HTMLElement;
     /** CSS class name(s) to apply to the component's root element */
-    className: string;
+    className?: string;
 };
 
 /**

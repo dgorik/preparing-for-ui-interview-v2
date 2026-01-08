@@ -5,7 +5,7 @@ Bun.serve({
         "/": homepage,
     },
     development: {
-        hmr: true,
+        hmr: false,
     },
     async fetch(req) {
         const url = new URL(req.url); // Parse URL properly

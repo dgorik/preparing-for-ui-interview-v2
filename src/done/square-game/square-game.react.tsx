@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import flex from '../../utilities/flex.module.css';
-import { cx } from '../../utilities/utility';
+import flex from '@course/styles';
+import cx from '@course/cx';
 import styles from './square-game.module.css';
 import { getEmptyPosition, getGameState, isWin, validate } from "./square-game.utility";
 

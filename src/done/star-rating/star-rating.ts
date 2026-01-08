@@ -1,6 +1,6 @@
 import { Component } from "../../utilities/component";
 import styles from './star-rating.module.css'
-import flex from '../../utilities/flex.module.css'
+import flex from '@course/styles'
 
 type TStarRatingProps = {
     value: number;

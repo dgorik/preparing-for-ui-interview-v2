@@ -1,7 +1,7 @@
 import React, { type ChangeEventHandler } from 'react';
 import styles from './table.module.css';
-import flex from '../../utilities/flex.module.css'
-import { cx } from '../../utilities/utility';
+import flex from '@course/styles'
+import cx from '@course/cx';
 
 
 export type TTableColumn<T> = {

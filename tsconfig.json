@@ -1,5 +1,14 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@course/styles": [
+        "src/utilities/flex.module.css"
+      ],
+      "@course/cx": [
+        "src/utilities/utility.ts"
+      ]
+    },
     "target": "ESNext",
     "lib": [
       "ES2022",

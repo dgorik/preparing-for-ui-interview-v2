@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import css from './tooltip.module.css';
-import { cx } from '../../utilities/utility';
+import cx from '@course/cx';
 
 
 type TooltipProps = {

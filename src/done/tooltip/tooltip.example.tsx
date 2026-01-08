@@ -1,6 +1,6 @@
 import { Tooltip } from "./tooltip.react";
-import flex from '../../utilities/flex.module.css';
-import { cx } from '../../utilities/utility';
+import flex from '@course/styles';
+import cx from '@course/cx';
 
 export function TooltipExample() {
     return (

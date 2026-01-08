@@ -4,9 +4,9 @@ import React, {
     type ReactElement,
     type RefObject,
 } from "react";
-import flex from "../../utilities/flex.module.css";
+import flex from "@course/styles";
 import tabs from "./tabs.module.css";
-import { cx } from "../../utilities/utility";
+import cx from "@course/cx";
 import { createPortal } from "react-dom";
 
 
