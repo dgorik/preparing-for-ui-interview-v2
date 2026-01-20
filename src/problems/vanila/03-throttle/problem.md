@@ -16,21 +16,21 @@ Implement a `throttle` function that limits the rate at which a function can fir
 
 ```typescript
 function throttle<T extends (...args: any[]) => any>(
-    fn: T,
-    delay: number
+  fn: T,
+  delay: number,
 ): (...args: Parameters<T>) => void
 ```
 
 ## Example
 
 ```typescript
-const log = throttle((msg: string) => console.log(msg), 1000);
+const log = throttle((msg: string) => console.log(msg), 1000)
 
-log('a');  // Logs 'a' immediately
-log('b');  // Ignored (within 1000ms)
-log('c');  // Ignored (within 1000ms)
+log('a') // Logs 'a' immediately
+log('b') // Ignored (within 1000ms)
+log('c') // Ignored (within 1000ms)
 // ... after 1000ms
-log('d');  // Logs 'd'
+log('d') // Logs 'd'
 ```
 
 ## Hints

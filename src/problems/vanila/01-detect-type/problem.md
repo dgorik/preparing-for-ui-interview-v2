@@ -21,33 +21,34 @@ function detectType(value: any): string
 
 ```typescript
 // Null and undefined
-detectType(null)       // "null"
-detectType(undefined)  // "undefined"
+detectType(null) // "null"
+detectType(undefined) // "undefined"
 
 // Primitives
-detectType(42)         // "number"
-detectType('hello')    // "string"
-detectType(true)       // "boolean"
-detectType(Symbol())   // "symbol"
-detectType(123n)       // "bigint"
+detectType(42) // "number"
+detectType('hello') // "string"
+detectType(true) // "boolean"
+detectType(Symbol()) // "symbol"
+detectType(123n) // "bigint"
 
 // Objects
-detectType({})         // "object"
-detectType([])         // "array"
-detectType(() => {})   // "function"
+detectType({}) // "object"
+detectType([]) // "array"
+detectType(() => {}) // "function"
 
 // Built-in objects
-detectType(new Date())     // "date"
-detectType(/regex/)        // "regexp"
-detectType(new Map())      // "map"
-detectType(new Set())      // "set"
-detectType(new Error())    // "error"
+detectType(new Date()) // "date"
+detectType(/regex/) // "regexp"
+detectType(new Map()) // "map"
+detectType(new Set()) // "set"
+detectType(new Error()) // "error"
 detectType(Promise.resolve()) // "promise"
 ```
 
 ## Why Not `typeof`?
 
 The built-in `typeof` operator has limitations:
+
 - `typeof null` returns `"object"` (historical bug)
 - `typeof []` returns `"object"`
 - Can't distinguish between different object types

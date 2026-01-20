@@ -1,348 +1,348 @@
 /* Full-page black background wrapper */
 .app {
-    height: 100vh;
-    background: #000;
-    /* area outside of container */
-    display: flex;
-    justify-content: center;
-    /* center container horizontally */
-    align-items: flex-start;
-    padding: 0 4rem;
-    /* a little breathing room */
+  height: 100vh;
+  background: #000;
+  /* area outside of container */
+  display: flex;
+  justify-content: center;
+  /* center container horizontally */
+  align-items: flex-start;
+  padding: 0 4rem;
+  /* a little breathing room */
 }
 
 /* Centered white container */
 .container {
-    width: 100%;
-    background: #fff;
-    height: 100%;
-    display: flex;
-    overflow: hidden;
+  width: 100%;
+  background: #fff;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
 }
 
 .sidebar {
-    width: 300px;
-    border-right: 1px solid #eee;
-    padding: 20px;
-    flex-shrink: 0;
-    height: 100%;
-    overflow-y: auto;
+  width: 300px;
+  border-right: 1px solid #eee;
+  padding: 20px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .sidebar h3 {
-    margin-bottom: 10px;
-    font-size: 1.2rem;
-    font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 .sidebar ul {
-    list-style: none;
-    padding: 0;
+  list-style: none;
+  padding: 0;
 }
 
 .sidebar li {
-    margin-bottom: 5px;
+  margin-bottom: 5px;
 }
 
 .sidebar button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 8px 12px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 1rem;
-    color: #333;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #333;
 }
 
 .sidebar button:hover {
-    background-color: #f5f5f5;
+  background-color: #f5f5f5;
 }
 
 .sidebar button.active {
-    background-color: #e6f7ff;
-    color: #1890ff;
-    font-weight: 500;
+  background-color: #e6f7ff;
+  color: #1890ff;
+  font-weight: 500;
 }
 
 .sidebarSection {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .sectionTitle {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    padding-left: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-left: 12px;
 }
 
 .emptySection {
-    font-size: 0.85rem;
-    color: #999;
-    font-style: italic;
-    padding-left: 12px;
-    margin: 0;
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+  padding-left: 12px;
+  margin: 0;
 }
 
 /* Problem list with nested variants */
 .problemList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .problemItem {
-    margin-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .problemHeader {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 12px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
 }
 
 .problemName {
-    flex: 1;
+  flex: 1;
 }
 
 .variantList {
-    list-style: none;
-    padding: 0;
-    margin: 4px 0 0 20px;
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 20px;
 }
 
 .variantList li {
-    margin-bottom: 2px;
+  margin-bottom: 2px;
 }
 
 .variantList button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 4px 10px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    color: #666;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 4px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #666;
 }
 
 .variantList button:hover {
-    background-color: #f0f0f0;
-    color: #333;
+  background-color: #f0f0f0;
+  color: #333;
 }
 
 .variantList button.active {
-    background-color: #e6f7ff;
-    color: #1890ff;
-    font-weight: 500;
+  background-color: #e6f7ff;
+  color: #1890ff;
+  font-weight: 500;
 }
 
 /* Difficulty chips */
 .chip {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    margin-left: 8px;
-    vertical-align: middle;
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-left: 8px;
+  vertical-align: middle;
 }
 
 .warm-up {
-    background-color: #dcfce7;
-    color: #166534;
+  background-color: #dcfce7;
+  color: #166534;
 }
 
 .easy {
-    background-color: #bbf7d0;
-    color: #15803d;
+  background-color: #bbf7d0;
+  color: #15803d;
 }
 
 .medium {
-    background-color: #fef08a;
-    color: #a16207;
+  background-color: #fef08a;
+  color: #a16207;
 }
 
 .hard {
-    background-color: #fecaca;
-    color: #b91c1c;
+  background-color: #fecaca;
+  color: #b91c1c;
 }
 
 .extreme {
-    background-color: #ddd6fe;
-    color: #7c3aed;
+  background-color: #ddd6fe;
+  color: #7c3aed;
 }
 
 .content {
-    flex-grow: 1;
-    padding: 20px;
-    position: relative;
-    height: 100%;
-    overflow-y: auto;
+  flex-grow: 1;
+  padding: 20px;
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
 }
 
 /* Toast container (fixed to bottom, centered) */
 .toastContainer {
-    position: fixed;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    bottom: 0;
+  position: fixed;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  bottom: 0;
 }
 
 /* Markdown content styling */
 .markdownContent {
-    line-height: 1.7;
-    color: #333;
+  line-height: 1.7;
+  color: #333;
 }
 
 .markdownContent h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #eee;
-    color: #111;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #eee;
+  color: #111;
 }
 
 .markdownContent h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-    color: #222;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #222;
 }
 
 .markdownContent h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-top: 1.25rem;
-    margin-bottom: 0.5rem;
-    color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #333;
 }
 
 .markdownContent h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-    color: #444;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #444;
 }
 
 .markdownContent h5 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-    color: #555;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #555;
 }
 
 .markdownContent p {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 .markdownContent b,
 .markdownContent strong {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .markdownContent i,
 .markdownContent em {
-    font-style: italic;
+  font-style: italic;
 }
 
 .markdownContent s {
-    text-decoration: line-through;
-    color: #888;
+  text-decoration: line-through;
+  color: #888;
 }
 
 .markdownContent code {
-    background-color: #f5f2f0;
-    color: #d63384;
-    padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-    font-size: 0.9em;
+  background-color: #f5f2f0;
+  color: #d63384;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
 }
 
 .markdownContent a {
-    color: #1890ff;
-    text-decoration: none;
+  color: #1890ff;
+  text-decoration: none;
 }
 
 .markdownContent a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 .markdownContent ul,
 .markdownContent ol {
-    margin-bottom: 1rem;
-    padding-left: 2rem;
-    list-style-position: outside;
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+  list-style-position: outside;
 }
 
 .markdownContent ul {
-    list-style: disc outside;
+  list-style: disc outside;
 }
 
 .markdownContent ol {
-    list-style: decimal outside;
+  list-style: decimal outside;
 }
 
 .markdownContent ul li,
 .markdownContent ol li {
-    margin-bottom: 0.5rem;
-    display: list-item;
+  margin-bottom: 0.5rem;
+  display: list-item;
 }
 
 .markdownContent ul li {
-    list-style-type: disc;
+  list-style-type: disc;
 }
 
 .markdownContent ol li {
-    list-style-type: decimal;
+  list-style-type: decimal;
 }
 
 .markdownContent img {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 1rem 0;
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 1rem 0;
 }
 
 .markdownContent table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
 }
 
 .markdownContent th,
 .markdownContent td {
-    padding: 0.75rem;
-    text-align: left;
-    border: 1px solid #ddd;
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid #ddd;
 }
 
 .markdownContent th {
-    background-color: #f5f5f5;
-    font-weight: 600;
+  background-color: #f5f5f5;
+  font-weight: 600;
 }
 
 .markdownContent tr:nth-child(even) {
-    background-color: #fafafa;
+  background-color: #fafafa;
 }
 
 .markdownContent article {
-    max-width: 800px;
+  max-width: 800px;
 }

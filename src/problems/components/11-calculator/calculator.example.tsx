@@ -1,29 +1,29 @@
-import { useEffect, useRef } from 'react';
-import { Calculator } from './calculator.react';
-import { Calculator as VanillaCalculator } from './calculator.vanila';
+import { useEffect, useRef } from 'react'
+import { Calculator } from './calculator.react'
+import { Calculator as VanillaCalculator } from './calculator.vanila'
 
 export const CalculatorExample = () => {
-    return <Calculator />;
-};
+  return <Calculator />
+}
 
 export const CalculatorVanillaExample = () => {
-    const rootRef = useRef<HTMLElement>(null);
-    const calculatorRef = useRef<VanillaCalculator | null>(null);
+  const rootRef = useRef<HTMLElement>(null)
+  const calculatorRef = useRef<VanillaCalculator | null>(null)
 
-    useEffect(() => {
-        if (!rootRef.current) return;
+  useEffect(() => {
+    if (!rootRef.current) return
 
-        calculatorRef.current = new VanillaCalculator({
-            root: rootRef.current
-        });
+    calculatorRef.current = new VanillaCalculator({
+      root: rootRef.current,
+    })
 
-        calculatorRef.current.render();
+    calculatorRef.current.render()
 
-        return () => {
-            calculatorRef.current?.destroy();
-            calculatorRef.current = null;
-        };
-    }, []);
+    return () => {
+      calculatorRef.current?.destroy()
+      calculatorRef.current = null
+    }
+  }, [])
 
-    return <section ref={rootRef} />;
-};
+  return <section ref={rootRef} />
+}

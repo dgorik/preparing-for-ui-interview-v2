@@ -8,9 +8,6 @@
       "@course/types": ["./types.ts"]
     }
   },
-  "include": [
-    ".",
-    "types.ts"
-  ],
+  "include": [".", "types.ts"],
   "exclude": []
 }

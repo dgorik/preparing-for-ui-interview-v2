@@ -1,15 +1,15 @@
 /* Main container for the accordion group */
 .container {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 /* Individual accordion item wrapper */
 .details {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    overflow: hidden;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 /* 
@@ -18,43 +18,45 @@
   We animate height and content-visibility to create a smooth open/close effect.
 */
 .details::details-content {
-    transition: max-height 0.3s ease, content-visibility 0.3s allow-discrete;
-    max-height: 0;
-    overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    content-visibility 0.3s allow-discrete;
+  max-height: 0;
+  overflow: hidden;
 }
 
 /* When open, set height to auto to show content */
 .details[open]::details-content {
-    max-height: 500px;
-    /* Closer to actual content height to minimize delay */
+  max-height: 500px;
+  /* Closer to actual content height to minimize delay */
 }
 
 .summary {
-    background-color: #f9f9f9;
-    cursor: pointer;
-    font-weight: 500;
-    list-style: none;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  font-weight: 500;
+  list-style: none;
 }
 
 /* Hide default triangle in WebKit browsers */
 .summary::-webkit-details-marker {
-    display: none;
+  display: none;
 }
 
 /* Custom indicator (plus sign) */
 .summary::after {
-    content: '+';
-    font-size: 1.2rem;
-    transition: transform 0.2s;
+  content: '+';
+  font-size: 1.2rem;
+  transition: transform 0.2s;
 }
 
 /* Rotate the indicator when the item is open */
 .details[open] .summary::after {
-    transform: rotate(45deg);
+  transform: rotate(45deg);
 }
 
 /* The content area inside the accordion item */
 .content {
-    background-color: #fff;
-    border-top: 1px solid #eee;
+  background-color: #fff;
+  border-top: 1px solid #eee;
 }

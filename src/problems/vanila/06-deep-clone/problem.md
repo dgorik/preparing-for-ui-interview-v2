@@ -28,33 +28,33 @@ deepClone(42) // 42
 deepClone('hello') // 'hello'
 
 // Arrays
-const arr = [1, 2, 3];
-const clonedArr = deepClone(arr);
-clonedArr.push(4);
+const arr = [1, 2, 3]
+const clonedArr = deepClone(arr)
+clonedArr.push(4)
 arr // [1, 2, 3] - unaffected
 
 // Objects
-const obj = { a: { b: 1 } };
-const clonedObj = deepClone(obj);
-clonedObj.a.b = 2;
+const obj = { a: { b: 1 } }
+const clonedObj = deepClone(obj)
+clonedObj.a.b = 2
 obj.a.b // 1 - unaffected
 
 // Map
-const map = new Map([['key', { value: 1 }]]);
-const clonedMap = deepClone(map);
+const map = new Map([['key', { value: 1 }]])
+const clonedMap = deepClone(map)
 
 // Set
-const set = new Set([{ a: 1 }]);
-const clonedSet = deepClone(set);
+const set = new Set([{ a: 1 }])
+const clonedSet = deepClone(set)
 
 // Date
-const date = new Date('2024-01-01');
-const clonedDate = deepClone(date);
+const date = new Date('2024-01-01')
+const clonedDate = deepClone(date)
 
 // Circular reference
-const circular: any = { a: 1 };
-circular.self = circular;
-const cloned = deepClone(circular);
+const circular: any = { a: 1 }
+circular.self = circular
+const cloned = deepClone(circular)
 cloned.self === cloned // true
 ```
 

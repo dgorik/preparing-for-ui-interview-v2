@@ -2,27 +2,15 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@course/styles": [
-        "src/utilities/flex.module.css"
-      ],
-      "@course/cx": [
-        "src/utilities/utility.ts"
-      ],
-      "@course/types": [
-        "src/problems/typescript/types.ts"
-      ]
+      "@course/styles": ["src/utilities/flex.module.css"],
+      "@course/cx": ["src/utilities/utility.ts"],
+      "@course/types": ["src/problems/typescript/types.ts"]
     },
     "target": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": [
-      "bun-types"
-    ],
+    "types": ["bun-types"],
     /* JSX */
     "jsx": "react-jsx",
     /* Emit */
@@ -39,10 +27,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "src/problems/typescript"
-  ]
+  "include": ["src"],
+  "exclude": ["src/problems/typescript"]
 }

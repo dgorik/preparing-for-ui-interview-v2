@@ -1,3 +1,3 @@
-import { InfiniteCanvas } from "./infinite-canvas.react";
+import { InfiniteCanvas } from './infinite-canvas.react'
 
-export const InfiniteCanvasExample = () => <InfiniteCanvas />;
+export const InfiniteCanvasExample = () => <InfiniteCanvas />

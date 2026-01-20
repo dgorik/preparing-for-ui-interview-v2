@@ -1,60 +1,70 @@
-import { describe, it, expect } from 'bun:test';
-import { throttle } from '../throttle';
+import { describe, it, expect } from 'bun:test'
+import { throttle } from '../throttle'
 
 describe('throttle', () => {
-    it('should return a function', () => {
-        const throttled = throttle(() => { }, 100);
-        expect(typeof throttled).toBe('function');
-    });
+  it('should return a function', () => {
+    const throttled = throttle(() => {}, 100)
+    expect(typeof throttled).toBe('function')
+  })
 
-    it('should execute immediately on first call', () => {
-        let callCount = 0;
-        const throttled = throttle(() => { callCount++; }, 100);
+  it('should execute immediately on first call', () => {
+    let callCount = 0
+    const throttled = throttle(() => {
+      callCount++
+    }, 100)
 
-        throttled();
-        expect(callCount).toBe(1);
-    });
+    throttled()
+    expect(callCount).toBe(1)
+  })
 
-    it('should ignore calls within delay period', () => {
-        let callCount = 0;
-        const throttled = throttle(() => { callCount++; }, 100);
+  it('should ignore calls within delay period', () => {
+    let callCount = 0
+    const throttled = throttle(() => {
+      callCount++
+    }, 100)
 
-        throttled();
-        throttled();
-        throttled();
+    throttled()
+    throttled()
+    throttled()
 
-        expect(callCount).toBe(1);
-    });
+    expect(callCount).toBe(1)
+  })
 
-    it('should allow call after delay period', async () => {
-        let callCount = 0;
-        const throttled = throttle(() => { callCount++; }, 50);
+  it('should allow call after delay period', async () => {
+    let callCount = 0
+    const throttled = throttle(() => {
+      callCount++
+    }, 50)
 
-        throttled();
-        expect(callCount).toBe(1);
+    throttled()
+    expect(callCount).toBe(1)
 
-        await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100))
 
-        throttled();
-        expect(callCount).toBe(2);
-    });
+    throttled()
+    expect(callCount).toBe(2)
+  })
 
-    it('should pass arguments to the function', () => {
-        let result = '';
-        const throttled = throttle((msg: string) => { result = msg; }, 100);
+  it('should pass arguments to the function', () => {
+    let result = ''
+    const throttled = throttle((msg: string) => {
+      result = msg
+    }, 100)
 
-        throttled('hello');
-        expect(result).toBe('hello');
-    });
+    throttled('hello')
+    expect(result).toBe('hello')
+  })
 
-    it('should use first call arguments when throttled', () => {
-        let result = '';
-        const throttled = throttle((msg: string) => { result = msg; }, 100);
+  it('should use first call arguments when throttled', () => {
+    let result = ''
+    const throttled = throttle((msg: string) => {
+      result = msg
+    }, 100)
 
-        throttled('a');
-        throttled('b');
-        throttled('c');
+    throttled('a')
+    throttled('b')
+    throttled('c')
 
-        expect(result).toBe('a');
-    });
-});
+    expect(result).toBe('a')
+  })
+})

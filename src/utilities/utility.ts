@@ -6,4 +6,4 @@ export function cx(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default cx;
+export default cx

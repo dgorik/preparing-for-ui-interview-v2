@@ -16,19 +16,19 @@ Implement a `debounce` function that delays invoking a function until after a sp
 
 ```typescript
 function debounce<T extends (...args: any[]) => any>(
-    fn: T,
-    delay: number
+  fn: T,
+  delay: number,
 ): (...args: Parameters<T>) => void
 ```
 
 ## Example
 
 ```typescript
-const log = debounce((msg: string) => console.log(msg), 1000);
+const log = debounce((msg: string) => console.log(msg), 1000)
 
-log('a');  // Timer starts
-log('b');  // Timer resets
-log('c');  // Timer resets
+log('a') // Timer starts
+log('b') // Timer resets
+log('c') // Timer resets
 // ... after 1000ms of no calls: logs 'c'
 ```
 

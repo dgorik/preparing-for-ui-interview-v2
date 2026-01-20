@@ -1,12 +1,12 @@
 # Welcome to GPT Chat
 
-This is a **sample response** from the AI assistant. Let me show you some *formatting* examples and demonstrate the streaming capabilities.
+This is a **sample response** from the AI assistant. Let me show you some _formatting_ examples and demonstrate the streaming capabilities.
 
 ## Introduction
 
 Hello! I am your AI assistant, ready to help you with a wide variety of tasks. Whether you need assistance with coding, writing, or analysis, I am here to assist.
 
-This response showcases the different formatting options available in our markdown parser. You will see **bold text**, *italic text*, and various other elements.
+This response showcases the different formatting options available in our markdown parser. You will see **bold text**, _italic text_, and various other elements.
 
 ## Key Features
 
@@ -14,7 +14,7 @@ Here are the main features of our system:
 
 - Fast streaming responses with real-time delivery
 - Smooth typing animation effect
-- **Bold** and *italic* text support
+- **Bold** and _italic_ text support
 - Ordered and unordered lists
 - Tables with headers and rows
 - Multiple heading levels
@@ -51,19 +51,19 @@ We prioritize speed and reliability in all operations. The streaming approach en
 
 Here is a simple comparison table:
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Streaming | Active | Real-time delivery |
-| Markdown | Working | Full syntax support |
-| Tables | Supported | Headers and rows |
-| Lists | Complete | Both types |
+| Feature   | Status    | Description         |
+| --------- | --------- | ------------------- |
+| Streaming | Active    | Real-time delivery  |
+| Markdown  | Working   | Full syntax support |
+| Tables    | Supported | Headers and rows    |
+| Lists     | Complete  | Both types          |
 
 And another table showing performance metrics:
 
-| Metric | Value |
-|--------|-------|
-| Response Time | Fast |
-| Reliability | High |
+| Metric          | Value     |
+| --------------- | --------- |
+| Response Time   | Fast      |
+| Reliability     | High      |
 | User Experience | Excellent |
 
 ## Best Practices
@@ -86,7 +86,7 @@ For optimal results:
 
 ## Additional Information
 
-The system supports various formatting combinations. You can use **bold text** in the middle of a sentence, or *italicize* important terms.
+The system supports various formatting combinations. You can use **bold text** in the middle of a sentence, or _italicize_ important terms.
 
 Lists can be nested and combined with other elements for clear organization of information.
 
@@ -94,6 +94,6 @@ Lists can be nested and combined with other elements for clear organization of i
 
 Thank you for using **GPT Chat**! This demonstrates our streaming markdown capabilities with a longer response.
 
-Feel free to experiment with the *typing animation* and observe how the content appears in real-time. The streaming effect creates an engaging user experience.
+Feel free to experiment with the _typing animation_ and observe how the content appears in real-time. The streaming effect creates an engaging user experience.
 
 We hope you enjoy using this feature. Happy chatting!

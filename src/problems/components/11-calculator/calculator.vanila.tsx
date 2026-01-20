@@ -1,62 +1,62 @@
-import { AbstractComponent } from "../00-abstract-component/component";
-import css from './calculator.module.css';
+import { AbstractComponent } from '../00-abstract-component/component'
+import css from './calculator.module.css'
 
 interface ICalculatorState {
-    value: string;
+  value: string
 }
 
-import { BUTTONS, INVALID_VALUE } from './calculator.utils';
-
+import { BUTTONS, INVALID_VALUE } from './calculator.utils'
 
 export class Calculator extends AbstractComponent<{}> {
+  state: ICalculatorState = {
+    value: '0',
+  }
 
-    state: ICalculatorState = {
-        value: '0'
+  onButtonClick(e: Event) {
+    const target = e.target as HTMLElement
+    const label = target.dataset.label
+
+    if (label) {
+      const button = BUTTONS.get(label)
+      if (button) {
+        this.state.value = button.action(this.state.value, label)
+        this.updateDisplay()
+      }
     }
+  }
 
-    onButtonClick(e: Event) {
-        const target = e.target as HTMLElement;
-        const label = target.dataset.label;
+  updateDisplay() {
+    const output = this.container?.querySelector(`.${css.output}`)
+    if (output) {
+      output.textContent = this.state.value
+    }
+    this.updateButtonStates()
+  }
 
-        if (label) {
-            const button = BUTTONS.get(label);
-            if (button) {
-                this.state.value = button.action(this.state.value, label);
-                this.updateDisplay();
-            }
+  updateButtonStates() {
+    if (this.state.value === INVALID_VALUE) {
+      const buttons = this.container?.querySelectorAll(`.${css.button}`)
+      buttons?.forEach((btn) => {
+        if ((btn as HTMLElement).dataset.label !== 'AC') {
+          ;(btn as HTMLButtonElement).disabled = true
         }
+      })
+    } else {
+      const buttons = this.container?.querySelectorAll(`.${css.button}:disabled`)
+      buttons?.forEach((btn) => {
+        ;(btn as HTMLButtonElement).disabled = false
+      })
     }
+  }
 
-    updateDisplay() {
-        const output = this.container?.querySelector(`.${css.output}`);
-        if (output) {
-            output.textContent = this.state.value;
-        }
-        this.updateButtonStates();
-    }
-
-    updateButtonStates() {
-        if (this.state.value === INVALID_VALUE) {
-            const buttons = this.container?.querySelectorAll(`.${css.button}`);
-            buttons?.forEach(btn => {
-                if ((btn as HTMLElement).dataset.label !== 'AC') {
-                    (btn as HTMLButtonElement).disabled = true;
-                }
-            });
-        } else {
-            const buttons = this.container?.querySelectorAll(`.${css.button}:disabled`);
-            buttons?.forEach(btn => {
-                (btn as HTMLButtonElement).disabled = false;
-            });
-        }
-    }
-
-    toHTML() {
-        return `
+  toHTML() {
+    return `
             <div class="${css.calculator}">
                 <output class="${css.output}">${this.state.value}</output>
                 <section class="${css.keypad}">
-                    ${Array.from(BUTTONS.values()).map(btn => `
+                    ${Array.from(BUTTONS.values())
+                      .map(
+                        (btn) => `
                         <button 
                             class="${css.button}" 
                             data-label="${btn.label}"
@@ -64,13 +64,17 @@ export class Calculator extends AbstractComponent<{}> {
                         >
                             ${btn.label}
                         </button>
-                    `).join('')}
+                    `,
+                      )
+                      .join('')}
                 </section>
             </div>
-        `;
-    }
+        `
+  }
 
-    afterRender() {
-        this.container?.querySelector(`.${css.keypad}`)?.addEventListener('click', this.onButtonClick.bind(this));
-    }
+  afterRender() {
+    this.container
+      ?.querySelector(`.${css.keypad}`)
+      ?.addEventListener('click', this.onButtonClick.bind(this))
+  }
 }

@@ -6,11 +6,11 @@
  * @returns The transformed text (typically HTML).
  */
 export function parseRichText(text: string, rules: Array<TRichTextRule> = []) {
-    let result = text;
-    for (const rule of rules) {
-        result = rule.apply(result);
-    }
-    return result;
+  let result = text
+  for (const rule of rules) {
+    result = rule.apply(result)
+  }
+  return result
 }
 
 /**
@@ -27,8 +27,11 @@ type TRichTextPatternReplacer = ((content: string, ...groupMatch: any[]) => stri
  * @returns HTML string with <ul> and <li> tags.
  */
 const UNORDERED_LIST_REPLACER: TRichTextPatternReplacer = (fullMatch: string) => {
-    const items = fullMatch.trim().split("\n").reduce((acc, next) => acc + '<li>' + next.substring(2) + '</li>', "");
-    return `\n<ul>${items}</ul>`;
+  const items = fullMatch
+    .trim()
+    .split('\n')
+    .reduce((acc, next) => acc + '<li>' + next.substring(2) + '</li>', '')
+  return `\n<ul>${items}</ul>`
 }
 
 /**
@@ -38,8 +41,11 @@ const UNORDERED_LIST_REPLACER: TRichTextPatternReplacer = (fullMatch: string) =>
  * @returns HTML string with <ol> and <li> tags.
  */
 const ORDERED_LIST_REPLACER: TRichTextPatternReplacer = (fullMatch: string) => {
-    const items = fullMatch.trim().split("\n").reduce((acc, next) => acc + '<li>' + next.substring(next.indexOf('.') + 2) + '</li>', "");
-    return `\n<ol>${items}</ol>`;
+  const items = fullMatch
+    .trim()
+    .split('\n')
+    .reduce((acc, next) => acc + '<li>' + next.substring(next.indexOf('.') + 2) + '</li>', '')
+  return `\n<ol>${items}</ol>`
 }
 
 /**
@@ -51,14 +57,31 @@ const ORDERED_LIST_REPLACER: TRichTextPatternReplacer = (fullMatch: string) => {
  * @param rows - The data rows content (newline-separated, pipe-separated cells).
  * @returns HTML string with complete table structure including thead/tbody.
  */
-const TABLE_REPLACER: TRichTextPatternReplacer = (_: string, header: string, __: string, rows: string) => {
-    const filterEmpty = (str: string) => Boolean(str.trim());
-    const xmlHeaders: Array<string> = header.split("|").filter(filterEmpty).map(header => `<th>${header.trim()}</th>`);
-    const xmlRows: Array<string> = rows.split("\n").filter(Boolean).map(row => {
-        const cells = row.split('|').filter(filterEmpty).map(cell => `<td>${cell.trim()}</td>`).join('');
-        return `<tr>${cells}</tr>`;
+const TABLE_REPLACER: TRichTextPatternReplacer = (
+  _: string,
+  header: string,
+  __: string,
+  rows: string,
+) => {
+  const filterEmpty = (str: string) => Boolean(str.trim())
+  const xmlHeaders: Array<string> = header
+    .split('|')
+    .filter(filterEmpty)
+    .map((header) => `<th>${header.trim()}</th>`)
+  const xmlRows: Array<string> = rows
+    .split('\n')
+    .filter(Boolean)
+    .map((row) => {
+      const cells = row
+        .split('|')
+        .filter(filterEmpty)
+        .map((cell) => `<td>${cell.trim()}</td>`)
+        .join('')
+      return `<tr>${cells}</tr>`
     })
-    return `<table><thead><tr>${xmlHeaders.join('')}</tr></thead><tbody>${xmlRows.join('')}</tbody></table>`.trim().concat("\n");
+  return `<table><thead><tr>${xmlHeaders.join('')}</tr></thead><tbody>${xmlRows.join('')}</tbody></table>`
+    .trim()
+    .concat('\n')
 }
 
 /**
@@ -66,25 +89,28 @@ const TABLE_REPLACER: TRichTextPatternReplacer = (_: string, header: string, __:
  * Encapsulates a regular expression and its corresponding replacer.
  */
 class TRichTextPattern {
-    /**
-     * Creates a new pattern transformation.
-     * @param regexp - The regular expression to match against.
-     * @param replacer - The replacement string or function.
-     */
-    constructor(private regexp: RegExp, private replacer: TRichTextPatternReplacer) { }
+  /**
+   * Creates a new pattern transformation.
+   * @param regexp - The regular expression to match against.
+   * @param replacer - The replacement string or function.
+   */
+  constructor(
+    private regexp: RegExp,
+    private replacer: TRichTextPatternReplacer,
+  ) {}
 
-    /**
-     * Applies this pattern transformation to the given text.
-     * @param text - The input text to transform.
-     * @returns The text with all matches replaced.
-     */
-    apply(text: string) {
-        const replacer = this.replacer;
-        if (typeof replacer === 'string') {
-            return text.replace(this.regexp, replacer);
-        }
-        return text.replace(this.regexp, replacer);
+  /**
+   * Applies this pattern transformation to the given text.
+   * @param text - The input text to transform.
+   * @returns The text with all matches replaced.
+   */
+  apply(text: string) {
+    const replacer = this.replacer
+    if (typeof replacer === 'string') {
+      return text.replace(this.regexp, replacer)
     }
+    return text.replace(this.regexp, replacer)
+  }
 }
 
 /**
@@ -92,23 +118,25 @@ class TRichTextPattern {
  * Rules group related patterns together and apply them sequentially.
  */
 class TRichTextRule {
-    /**
-     * Creates a new transformation rule.
-     * @param name - A descriptive name for this rule (e.g., 'bold', 'link').
-     * @param patterns - An array of patterns to apply in order.
-     */
-    constructor(public name: string, private patterns: TRichTextPattern[]) { }
+  /**
+   * Creates a new transformation rule.
+   * @param name - A descriptive name for this rule (e.g., 'bold', 'link').
+   * @param patterns - An array of patterns to apply in order.
+   */
+  constructor(
+    public name: string,
+    private patterns: TRichTextPattern[],
+  ) {}
 
-    /**
-     * Applies all patterns in this rule sequentially to the given text.
-     * @param text - The input text to transform.
-     * @returns The text after all patterns have been applied.
-     */
-    apply(text: string) {
-        return this.patterns.reduce((acc, next) => next.apply(acc), text);
-    }
+  /**
+   * Applies all patterns in this rule sequentially to the given text.
+   * @param text - The input text to transform.
+   * @returns The text after all patterns have been applied.
+   */
+  apply(text: string) {
+    return this.patterns.reduce((acc, next) => next.apply(acc), text)
+  }
 }
-
 
 /**
  * Rule for converting Markdown images to HTML.
@@ -119,11 +147,11 @@ class TRichTextRule {
  * // Output: <img src="data:image/png;base64,iVBORw0KG..." alt="Logo"></img>
  */
 const IMAGE_RULE = new TRichTextRule('image', [
-    new TRichTextPattern(
-        /!\[([^[]+)\]\((data:image\/png;base64),([^)]+)\)/g,
-        `<img src="$2,$3" alt="$1"></img>`,
-    ),
-]);
+  new TRichTextPattern(
+    /!\[([^[]+)\]\((data:image\/png;base64),([^)]+)\)/g,
+    `<img src="$2,$3" alt="$1"></img>`,
+  ),
+])
 
 /**
  * Rule for converting Markdown links to HTML anchors.
@@ -134,11 +162,8 @@ const IMAGE_RULE = new TRichTextRule('image', [
  * // Output: <a href="https://google.com">Google</a>
  */
 const LINK_RULE = new TRichTextRule('link', [
-    new TRichTextPattern(
-        /(^|[^!])\[([^[]+)\]\(([^)]+)\)/g,
-        '$1<a href="$3">$2</a>',
-    ),
-]);
+  new TRichTextPattern(/(^|[^!])\[([^[]+)\]\(([^)]+)\)/g, '$1<a href="$3">$2</a>'),
+])
 
 /**
  * Rule for converting Markdown headers to HTML heading elements.
@@ -151,13 +176,13 @@ const LINK_RULE = new TRichTextRule('link', [
  * // Output: <h2>Section</h2>
  */
 const HEADER_RULE = new TRichTextRule('header', [
-    new TRichTextPattern(/^#{6}\s?([^\n]+)/gm, '<p>$1</p>'),
-    new TRichTextPattern(/^#{5}\s?([^\n]+)/gm, '<h5>$1</h5>'),
-    new TRichTextPattern(/^#{4}\s?([^\n]+)/gm, '<h4>$1</h4>'),
-    new TRichTextPattern(/^#{3}\s?([^\n]+)/gm, '<h3>$1</h3>'),
-    new TRichTextPattern(/^#{2}\s?([^\n]+)/gm, `<h2>$1</h2>`),
-    new TRichTextPattern(/^#{1}\s?([^\n]+)/gm, `<h1>$1</h1>`),
-]);
+  new TRichTextPattern(/^#{6}\s?([^\n]+)/gm, '<p>$1</p>'),
+  new TRichTextPattern(/^#{5}\s?([^\n]+)/gm, '<h5>$1</h5>'),
+  new TRichTextPattern(/^#{4}\s?([^\n]+)/gm, '<h4>$1</h4>'),
+  new TRichTextPattern(/^#{3}\s?([^\n]+)/gm, '<h3>$1</h3>'),
+  new TRichTextPattern(/^#{2}\s?([^\n]+)/gm, `<h2>$1</h2>`),
+  new TRichTextPattern(/^#{1}\s?([^\n]+)/gm, `<h1>$1</h1>`),
+])
 
 /**
  * Rule for converting Markdown tables to HTML table elements.
@@ -171,11 +196,8 @@ const HEADER_RULE = new TRichTextRule('header', [
  * // Output: <table><thead><tr><th>Name</th><th>Age</th></tr></thead><tbody><tr><td>John</td><td>30</td></tr></tbody></table>
  */
 const TABLE_RULE = new TRichTextRule('table', [
-    new TRichTextPattern(
-        /^(\|.+\|\r?\n)(\|[-:| ]+\|\r?\n)((?:\|.*\|\r?\n?)*)/gm,
-        TABLE_REPLACER,
-    ),
-]);
+  new TRichTextPattern(/^(\|.+\|\r?\n)(\|[-:| ]+\|\r?\n)((?:\|.*\|\r?\n?)*)/gm, TABLE_REPLACER),
+])
 
 /**
  * Rule for converting Markdown lists to HTML list elements.
@@ -188,15 +210,12 @@ const TABLE_RULE = new TRichTextRule('table', [
  * // Output: <ol><li>First</li><li>Second</li></ol>
  */
 const LIST_RULE = new TRichTextRule('simple lists', [
-    new TRichTextPattern(
-        /(?:^|\n)(?![^\n]*<[^>]*>)(\s*[0-9]+\.\s.*)+/g,
-        ORDERED_LIST_REPLACER,
-    ),
-    new TRichTextPattern(
-        /(?:^|\n)(?![^\n]*<[^>]*>)(\s*[-+]\s.*(?:\n\s*[-+]\s.*)*)/g,
-        UNORDERED_LIST_REPLACER,
-    ),
-]);
+  new TRichTextPattern(/(?:^|\n)(?![^\n]*<[^>]*>)(\s*[0-9]+\.\s.*)+/g, ORDERED_LIST_REPLACER),
+  new TRichTextPattern(
+    /(?:^|\n)(?![^\n]*<[^>]*>)(\s*[-+]\s.*(?:\n\s*[-+]\s.*)*)/g,
+    UNORDERED_LIST_REPLACER,
+  ),
+])
 
 /**
  * Rule for converting combined/mixed text formatting to HTML.
@@ -209,29 +228,20 @@ const LIST_RULE = new TRichTextRule('simple lists', [
  * // Input:  ***text***     → <b><i>text</i></b>
  */
 const MIXED_TEXT_RULE = new TRichTextRule('mixed-text', [
-    new TRichTextPattern(
-        /\*\*\*~~\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)~~\*\*\*/g,
-        '<b><i><s>$1</s></i></b>',
-    ),
-    new TRichTextPattern(
-        /~~\*\*\*\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)\*\*\*~~/g,
-        '<s><b><i>$1</i></b></s>',
-    ),
-    new TRichTextPattern(
-        /~~\*\*\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)\*\*~~/g,
-        '<s><b>$1</b></s>',
-    ),
-    new TRichTextPattern(
-        /\*\*~~\s?([^\n]+?)~~\*\*/g,
-        '<b><s>$1</s></b>',
-    ),
-    new TRichTextPattern(/~~\*\s?([^\n]+?)\*~~/g, '<s><i>$1</i></s>'),
-    new TRichTextPattern(
-        /\*~~\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)~~\*/g,
-        '<i><s>$1</s></i>',
-    ),
-    new TRichTextPattern(/\*\*\*\s?([^\n]+?)\*\*\*/g, '<b><i>$1</i></b>'),
-]);
+  new TRichTextPattern(
+    /\*\*\*~~\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)~~\*\*\*/g,
+    '<b><i><s>$1</s></i></b>',
+  ),
+  new TRichTextPattern(
+    /~~\*\*\*\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)\*\*\*~~/g,
+    '<s><b><i>$1</i></b></s>',
+  ),
+  new TRichTextPattern(/~~\*\*\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)\*\*~~/g, '<s><b>$1</b></s>'),
+  new TRichTextPattern(/\*\*~~\s?([^\n]+?)~~\*\*/g, '<b><s>$1</s></b>'),
+  new TRichTextPattern(/~~\*\s?([^\n]+?)\*~~/g, '<s><i>$1</i></s>'),
+  new TRichTextPattern(/\*~~\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)~~\*/g, '<i><s>$1</s></i>'),
+  new TRichTextPattern(/\*\*\*\s?([^\n]+?)\*\*\*/g, '<b><i>$1</i></b>'),
+])
 
 /**
  * Rule for wrapping plain text lines in paragraph tags.
@@ -242,11 +252,11 @@ const MIXED_TEXT_RULE = new TRichTextRule('mixed-text', [
  * // Output: <p>This is plain text.</p>
  */
 const PARAGRAPH_RULE = new TRichTextRule('paragraph', [
-    new TRichTextPattern(
-        /^(?!#)(?!.*<\/?(ul|ol|img|h1|h2|p|table|tr|th|td|pre|code)>)(.*\S.*)$/gm,
-        '<p>$&</p>',
-    ),
-]);
+  new TRichTextPattern(
+    /^(?!#)(?!.*<\/?(ul|ol|img|h1|h2|p|table|tr|th|td|pre|code)>)(.*\S.*)$/gm,
+    '<p>$&</p>',
+  ),
+])
 
 /**
  * Rule for converting Markdown bold text to HTML.
@@ -256,9 +266,7 @@ const PARAGRAPH_RULE = new TRichTextRule('paragraph', [
  * // Input:  **bold text**
  * // Output: <b>bold text</b>
  */
-const BOLD_RULE = new TRichTextRule('bold', [
-    new TRichTextPattern(/\*\*(.+?)\*\*/g, '<b>$1</b>'),
-]);
+const BOLD_RULE = new TRichTextRule('bold', [new TRichTextPattern(/\*\*(.+?)\*\*/g, '<b>$1</b>')])
 
 /**
  * Rule for converting Markdown italic text to HTML.
@@ -268,9 +276,7 @@ const BOLD_RULE = new TRichTextRule('bold', [
  * // Input:  *italic text*
  * // Output: <i>italic text</i>
  */
-const ITALIC_RULE = new TRichTextRule('italic', [
-    new TRichTextPattern(/\*(.+?)\*/g, '<i>$1</i>'),
-]);
+const ITALIC_RULE = new TRichTextRule('italic', [new TRichTextPattern(/\*(.+?)\*/g, '<i>$1</i>')])
 
 /**
  * Rule for converting Markdown strikethrough text to HTML.
@@ -281,8 +287,8 @@ const ITALIC_RULE = new TRichTextRule('italic', [
  * // Output: <s>deleted text</s>
  */
 const STRIKETHROUGH_RULE = new TRichTextRule('strikethrough', [
-    new TRichTextPattern(/~~\s?([^\n]+?)~~/g, '<s>$1</s>'),
-]);
+  new TRichTextPattern(/~~\s?([^\n]+?)~~/g, '<s>$1</s>'),
+])
 
 /**
  * Rule for converting Markdown code blocks to HTML.
@@ -302,10 +308,14 @@ const STRIKETHROUGH_RULE = new TRichTextRule('strikethrough', [
  * @param lang - Language identifier
  * @param content - Code content
  */
-const CODE_BLOCK_REPLACER: TRichTextPatternReplacer = (_: string, lang: string, content: string) => {
-    // Remove trailing newline if present, then replace newlines with entity
-    const processedContent = content.replace(/\n$/, '').replace(/\n/g, '&#10;');
-    return `<pre><code class="language-${lang}">${processedContent}</code></pre>`;
+const CODE_BLOCK_REPLACER: TRichTextPatternReplacer = (
+  _: string,
+  lang: string,
+  content: string,
+) => {
+  // Remove trailing newline if present, then replace newlines with entity
+  const processedContent = content.replace(/\n$/, '').replace(/\n/g, '&#10;')
+  return `<pre><code class="language-${lang}">${processedContent}</code></pre>`
 }
 
 /**
@@ -320,11 +330,8 @@ const CODE_BLOCK_REPLACER: TRichTextPatternReplacer = (_: string, lang: string, 
  * // Output: <pre><code class="language-ts">const x = 1;</code></pre>
  */
 const CODE_BLOCK_RULE = new TRichTextRule('code-block', [
-    new TRichTextPattern(
-        /^```(\w*)[ \t]*\n([\s\S]*?)^```/gm,
-        CODE_BLOCK_REPLACER,
-    ),
-]);
+  new TRichTextPattern(/^```(\w*)[ \t]*\n([\s\S]*?)^```/gm, CODE_BLOCK_REPLACER),
+])
 
 /**
  * Rule for converting Markdown inline code to HTML.
@@ -334,15 +341,13 @@ const CODE_BLOCK_RULE = new TRichTextRule('code-block', [
  * // Input:  `inline code`
  * // Output: <code>inline code</code>
  */
-const CODE_RULE = new TRichTextRule('code', [
-    new TRichTextPattern(/`([^`]+)`/g, '<code>$1</code>'),
-]);
+const CODE_RULE = new TRichTextRule('code', [new TRichTextPattern(/`([^`]+)`/g, '<code>$1</code>')])
 
 /**
  * Complete set of Markdown-to-HTML transformation rules.
  * **ORDER MATTERS!** Rules are executed from top to bottom.
  * Each rule receives the modified HTML string from previous rules.
- * 
+ *
  * Rule order rationale:
  * 1. IMAGE_RULE - Process images first (before links consume the syntax)
  * 2. LINK_RULE - Convert links before text formatting
@@ -355,18 +360,17 @@ const CODE_RULE = new TRichTextRule('code', [
  * 9. BOLD_RULE, ITALIC_RULE, STRIKETHROUGH_RULE - Individual formatting
  */
 export const RICH_TEXT_RULES: Array<TRichTextRule> = [
-    IMAGE_RULE,
-    LINK_RULE,
-    HEADER_RULE,
-    TABLE_RULE,
-    LIST_RULE,
-    CODE_BLOCK_RULE,
-    MIXED_TEXT_RULE,
-    PARAGRAPH_RULE,
-    MIXED_TEXT_RULE,
-    CODE_RULE,
-    BOLD_RULE,
-    ITALIC_RULE,
-    STRIKETHROUGH_RULE,
-];
-
+  IMAGE_RULE,
+  LINK_RULE,
+  HEADER_RULE,
+  TABLE_RULE,
+  LIST_RULE,
+  CODE_BLOCK_RULE,
+  MIXED_TEXT_RULE,
+  PARAGRAPH_RULE,
+  MIXED_TEXT_RULE,
+  CODE_RULE,
+  BOLD_RULE,
+  ITALIC_RULE,
+  STRIKETHROUGH_RULE,
+]

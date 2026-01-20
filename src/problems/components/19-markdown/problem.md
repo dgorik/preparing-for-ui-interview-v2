@@ -3,14 +3,17 @@
 **Difficulty**: `easy`
 
 ## Goal
+
 [Goal description]
 
 ## Requirements
 
 ### Core Functionality
+
 1. [Requirement 1]
 
 ### Accessibility (A11y)
+
 1. [Accessibility Requirement 1]
 
 ## API Design

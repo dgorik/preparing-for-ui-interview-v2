@@ -1,46 +1,54 @@
-import { AbstractComponent, type TComponentConfig } from "../00-abstract-component/component";
-import { type IRedditComment } from "./reddit-thread.react";
-import styles from "./reddit-thread.module.css";
-import flex from "@course/styles";
-import cx from "@course/cx";
+import { AbstractComponent, type TComponentConfig } from '../00-abstract-component/component'
+import { type IRedditComment } from './reddit-thread.react'
+import styles from './reddit-thread.module.css'
+import flex from '@course/styles'
+import cx from '@course/cx'
 
 export type TRedditThreadProps = {
-    comments: IRedditComment[];
-};
+  comments: IRedditComment[]
+}
 
 export class RedditThread extends AbstractComponent<TRedditThreadProps> {
-    constructor(config: TComponentConfig<TRedditThreadProps>) {
-        super({
-            ...config,
-            className: [styles.container, ...(config.className || [])],
-        });
-    }
+  constructor(config: TComponentConfig<TRedditThreadProps>) {
+    super({
+      ...config,
+      className: [styles.container, ...(config.className || [])],
+    })
+  }
 
-    private renderComment(comment: IRedditComment): string {
-        const hasReplies = comment.replies && comment.replies.length > 0;
+  private renderComment(comment: IRedditComment): string {
+    const hasReplies = comment.replies && comment.replies.length > 0
 
-        return `
+    return `
             <article class="${cx(styles.comment, flex.padding16)}">
                 <header class="${cx(flex.flexRowBetween)}">
                     <strong>${comment.nickname}</strong>
                     <time>${comment.date}</time>
                 </header>
                 <p class="${cx(flex.paddingVer8, flex.paddingHor8)}">${comment.text}</p>
-                ${hasReplies ? `
+                ${
+                  hasReplies
+                    ? `
                     <details>
                         <summary class="${styles.cursorPointer}">Replies</summary>
                         <ul class="${cx(flex.paddingLeft16, styles.repliesList)}">
-                            ${comment.replies.map(reply => `
+                            ${comment.replies
+                              .map(
+                                (reply) => `
                                 <li>${this.renderComment(reply)}</li>
-                            `).join('')}
+                            `,
+                              )
+                              .join('')}
                         </ul>
                     </details>
-                ` : ''}
+                `
+                    : ''
+                }
             </article>
-        `;
-    }
+        `
+  }
 
-    toHTML(): string {
-        return this.config.comments.map(comment => this.renderComment(comment)).join('');
-    }
+  toHTML(): string {
+    return this.config.comments.map((comment) => this.renderComment(comment)).join('')
+  }
 }

@@ -1,95 +1,90 @@
-import css from './gallery.module.css';
-import flex from '@course/styles';
-import cx from '@course/cx';
-import { useState, useEffect, useCallback } from 'react';
+import css from './gallery.module.css'
+import flex from '@course/styles'
+import cx from '@course/cx'
+import { useState, useEffect, useCallback } from 'react'
 
 type TGalleryProps = {
-    images: string[];
+  images: string[]
 }
 
 export const Gallery = ({ images }: TGalleryProps) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-    const handlePrev = useCallback(() => {
-        setCurrentIndex((prevIndex) => Math.max(0, prevIndex - 1));
-    }, []);
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prevIndex) => Math.max(0, prevIndex - 1))
+  }, [])
 
-    const handleNext = useCallback(() => {
-        setCurrentIndex((prevIndex) => Math.min(images.length - 1, prevIndex + 1));
-    }, [images.length]);
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prevIndex) => Math.min(images.length - 1, prevIndex + 1))
+  }, [images.length])
 
-    const goToSlide = (index: number) => {
-        setCurrentIndex(index);
-    };
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index)
+  }
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'ArrowLeft') handlePrev();
-            if (e.key === 'ArrowRight') handleNext();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handlePrev, handleNext]);
-
-    if (images.length === 0) {
-        return (
-            <section className={css.container}>
-                <div className={css.empty}>No images to display</div>
-            </section>
-        );
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') handlePrev()
+      if (e.key === 'ArrowRight') handleNext()
     }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handlePrev, handleNext])
 
+  if (images.length === 0) {
     return (
-        <section className={css.container}>
-            <button
-                disabled={currentIndex === 0}
-                className={cx(css.button, css.buttonPrev)}
-                onClick={handlePrev}
-                aria-label="Previous image"
-            >
-                {'<'}
-            </button>
+      <section className={css.container}>
+        <div className={css.empty}>No images to display</div>
+      </section>
+    )
+  }
 
-            <ul
-                className={cx(flex.flexRowStart, css.list)}
-                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-            >
-                {images.map((image, index) => {
-                    return (
-                        <li
-                            key={index}
-                            className={css.item}
-                        >
-                            <img
-                                src={currentIndex + 2 >= index ? image : undefined}
-                                alt={`Gallery image ${index + 1}`}
-                            />
-                        </li>
-                    );
-                })}
-            </ul>
+  return (
+    <section className={css.container}>
+      <button
+        disabled={currentIndex === 0}
+        className={cx(css.button, css.buttonPrev)}
+        onClick={handlePrev}
+        aria-label="Previous image"
+      >
+        {'<'}
+      </button>
 
-            <button
-                disabled={currentIndex === images.length - 1}
-                className={cx(css.button, css.buttonNext)}
-                onClick={handleNext}
-                aria-label="Next image"
-            >
-                {'>'}
-            </button>
+      <ul
+        className={cx(flex.flexRowStart, css.list)}
+        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      >
+        {images.map((image, index) => {
+          return (
+            <li key={index} className={css.item}>
+              <img
+                src={currentIndex + 2 >= index ? image : undefined}
+                alt={`Gallery image ${index + 1}`}
+              />
+            </li>
+          )
+        })}
+      </ul>
 
-            <div className={css.indicators}>
-                {images.map((_, index) => (
-                    <button
-                        key={index}
-                        className={cx(css.dot, currentIndex === index ? css.dotActive : '')}
-                        onClick={() => goToSlide(index)}
-                        aria-label={`Go to image ${index + 1}`}
-                    />
-                ))}
-            </div>
-        </section>
-    );
-};
+      <button
+        disabled={currentIndex === images.length - 1}
+        className={cx(css.button, css.buttonNext)}
+        onClick={handleNext}
+        aria-label="Next image"
+      >
+        {'>'}
+      </button>
 
-
+      <div className={css.indicators}>
+        {images.map((_, index) => (
+          <button
+            key={index}
+            className={cx(css.dot, currentIndex === index ? css.dotActive : '')}
+            onClick={() => goToSlide(index)}
+            aria-label={`Go to image ${index + 1}`}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}

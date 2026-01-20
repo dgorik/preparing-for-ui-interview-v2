@@ -3,24 +3,27 @@
 **Difficulty**: `easy`
 
 ## Goal
+
 Implement a `Tooltip` component that displays additional information when a user interacts with an element (hover or focus). It should support customizable positioning and behave accessibly.
 
 ## Requirements
 
 ### Core Functionality
+
 1. **Triggering**: The tooltip should appear on `mouseenter` and `focusin` events, and disappear on `mouseleave`, `focusout`, and `Escape` key press.
 2. **Positioning**:
-    - Support explicit positions: `top`, `bottom`, `left`, `right`.
-    - Support `auto` positioning: Automatically choose the best position based on available viewport space.
+   - Support explicit positions: `top`, `bottom`, `left`, `right`.
+   - Support `auto` positioning: Automatically choose the best position based on available viewport space.
 3. **Content**: Accept arbitrary HTML content (string for Vanilla, ReactNode for React) for the tooltip body.
 4. **Resiliency**: Handle edge cases where the tooltip might overflow the viewport.
 
 ### Accessibility (A11y)
+
 1. **Roles**: The tooltip container should have `role="tooltip"`.
 2. **Keyboard Navigation**:
-    - The trigger element must be keyboard focusable.
-    - Tooltip should open on focus.
-    - Pressing `Escape` should close the tooltip.
+   - The trigger element must be keyboard focusable.
+   - Tooltip should open on focus.
+   - Pressing `Escape` should close the tooltip.
 3. **ARIA**: Use `aria-describedby` on the trigger element pointing to the tooltip ID when visible.
 
 ## API Design
@@ -35,13 +38,13 @@ The component should accept the following props (React) or config (Vanilla):
 
 1. **State Management**: Track visibility state (`isVisible`).
 2. **Event Listeners**:
-    - Bind `mouseenter`/`mouseleave` to show/hide.
-    - Bind `focusin`/`focusout` to show/hide (bubbling events are crucial).
-    - Bind `keydown` to listen for `Escape`.
+   - Bind `mouseenter`/`mouseleave` to show/hide.
+   - Bind `focusin`/`focusout` to show/hide (bubbling events are crucial).
+   - Bind `keydown` to listen for `Escape`.
 3. **Positioning Logic**:
-    - Use absolute positioning relative to a container.
-    - For `auto`, calculate available space in all 4 directions using `getBoundingClientRect()` and the viewport dimensions.
-    - Switch class names or styles dynamically based on the chosen position.
+   - Use absolute positioning relative to a container.
+   - For `auto`, calculate available space in all 4 directions using `getBoundingClientRect()` and the viewport dimensions.
+   - Switch class names or styles dynamically based on the chosen position.
 
 ### Auto Positioning Logic
 
@@ -52,7 +55,6 @@ The `auto` positioning algorithm attempts to place the tooltip in the following 
 3.  **Left**: If Right fails.
 4.  **Bottom**: If Left fails.
 5.  **Fallback (Top)**: If all fail.
-
 
 ### Positioning Visualized
 

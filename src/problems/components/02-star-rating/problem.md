@@ -3,11 +3,13 @@
 **Difficulty**: `easy`
 
 ## Goal
+
 Build a star rating component that allows users to provide feedback by selecting a rating from 1 to 5 stars. It should support both read-only display and interactive selection modes.
 
 ## Requirements
 
 ### Core Functionality
+
 1. Render 5 stars by default (configurable count is a plus).
 2. Support **controlled** and **uncontrolled** modes.
 3. **Interactive Mode**: Hovering over a star should visually highlight it and all preceding stars. Clicking a star should update the selected value.
@@ -15,6 +17,7 @@ Build a star rating component that allows users to provide feedback by selecting
 5. **Visuals**: Filled stars should be visually distinct (e.g., gold/yellow). Empty stars should be outlined or gray.
 
 ### Accessibility (A11y)
+
 1. The component should behave like a radio group (`role="radiogroup"`).
 2. Each star should act as a radio button (`role="radio"`).
 3. Support keyboard navigation: `Tab` to focus, `Arrow Keys` to change selection, `Enter` or `Space` to select.

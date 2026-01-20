@@ -24,28 +24,28 @@ function myExtends(SuperType: Function, SubType: Function): Function
 
 ```typescript
 function Animal(name) {
-    this.name = name;
+  this.name = name
 }
-Animal.prototype.speak = function() {
-    return `${this.name} makes a sound`;
-};
+Animal.prototype.speak = function () {
+  return `${this.name} makes a sound`
+}
 
 function Dog(name) {
-    this.breed = 'unknown';
+  this.breed = 'unknown'
 }
-Dog.prototype.bark = function() {
-    return 'Woof!';
-};
+Dog.prototype.bark = function () {
+  return 'Woof!'
+}
 
-const ExtendedDog = myExtends(Animal, Dog);
-const dog = new ExtendedDog('Buddy');
+const ExtendedDog = myExtends(Animal, Dog)
+const dog = new ExtendedDog('Buddy')
 
-dog.name      // 'Buddy' (from Animal)
-dog.breed     // 'unknown' (from Dog)
-dog.speak()   // 'Buddy makes a sound'
-dog.bark()    // 'Woof!'
+dog.name // 'Buddy' (from Animal)
+dog.breed // 'unknown' (from Dog)
+dog.speak() // 'Buddy makes a sound'
+dog.bark() // 'Woof!'
 
-dog instanceof Dog    // true
+dog instanceof Dog // true
 dog instanceof Animal // true
 ```
 

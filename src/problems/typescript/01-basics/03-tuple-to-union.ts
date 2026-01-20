@@ -1,12 +1,11 @@
-// @ts-nocheck
 /**
  * 1.3 Tuple to Union
- * 
+ *
  * Implement a generic `TupleToUnion<T>` which covers the values of a tuple to its values union.
- * 
+ *
  * @example
  * type Arr = ['1', '2', '3']
- * 
+ *
  * type Test = TupleToUnion<Arr> // '1' | '2' | '3'
  */
 
@@ -19,6 +18,6 @@ type TupleToUnion<T extends readonly any[]> = T[number]
 /* _____________ Test Cases _____________ */
 
 type cases = [
-    Expect<Equal<TupleToUnion<[123, '456', true]>, 123 | '456' | true>>,
-    Expect<Equal<TupleToUnion<[123]>, 123>>,
+  Expect<Equal<TupleToUnion<[123, '456', true]>, 123 | '456' | true>>,
+  Expect<Equal<TupleToUnion<[123]>, 123>>,
 ]

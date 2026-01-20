@@ -5,14 +5,12 @@
  * @returns The randomized array.
  */
 export function randomizeArray(arr: Array<number | null>): Array<number | null> {
-    for (let i = 0; i < arr.length; i++) {
-        const newIndex = Math.floor(Math.random() * arr.length);
-        [arr[i], arr[newIndex]] = [arr[newIndex], arr[i]];
-    }
-    return arr;
+  for (let i = 0; i < arr.length; i++) {
+    const newIndex = Math.floor(Math.random() * arr.length)
+    ;[arr[i], arr[newIndex]] = [arr[newIndex], arr[i]]
+  }
+  return arr
 }
-
-
 
 /**
  * Splits an array into chunks of a specified size (creating a 2D array).
@@ -20,11 +18,8 @@ export function randomizeArray(arr: Array<number | null>): Array<number | null> 
  * @param n The size of each chunk.
  * @returns A 2D array.
  */
-function chunkify(
-    arr: Array<number | null>,
-    n: number
-): Array<Array<number | null>> {
-    return Array.from(Array(n), (_, i) => arr.slice(i * n, (i + 1) * n));
+function chunkify(arr: Array<number | null>, n: number): Array<Array<number | null>> {
+  return Array.from(Array(n), (_, i) => arr.slice(i * n, (i + 1) * n))
 }
 
 /**
@@ -34,11 +29,11 @@ function chunkify(
  * @returns A 2D array representing the game board.
  */
 export function getGameState(size: number): Array<Array<number | null>> {
-    let arr = Array(size * size)
-        .fill(null)
-        .map((_, i) => (i === size * size - 1 ? null : i + 1));
-    arr = randomizeArray(arr);
-    return chunkify(arr, size);
+  let arr = Array(size * size)
+    .fill(null)
+    .map((_, i) => (i === size * size - 1 ? null : i + 1))
+  arr = randomizeArray(arr)
+  return chunkify(arr, size)
 }
 
 /**
@@ -48,15 +43,10 @@ export function getGameState(size: number): Array<Array<number | null>> {
  * @param param1 [emptyRow, emptyCol] coordinates of the empty cell.
  * @returns True if the move is valid, false otherwise.
  */
-export function validate(
-    [row, col]: [number, number],
-    [emptyRow, emptyCol]: [number, number]
-) {
-    const validHorizontally =
-        row === emptyRow && (col === emptyCol + 1 || col === emptyCol - 1);
-    const validVertically =
-        col === emptyCol && (row === emptyRow + 1 || row === emptyRow - 1);
-    return validHorizontally || validVertically;
+export function validate([row, col]: [number, number], [emptyRow, emptyCol]: [number, number]) {
+  const validHorizontally = row === emptyRow && (col === emptyCol + 1 || col === emptyCol - 1)
+  const validVertically = col === emptyCol && (row === emptyRow + 1 || row === emptyRow - 1)
+  return validHorizontally || validVertically
 }
 
 /**
@@ -65,14 +55,14 @@ export function validate(
  * @returns [row, col] of the empty cell.
  */
 export function getEmptyPosition(arr: Array<Array<number | null>>): [number, number] {
-    for (let row = 0; row < arr.length; row++) {
-        for (let col = 0; col < arr[0].length; col++) {
-            if (arr[row][col] === null) {
-                return [row, col];
-            }
-        }
+  for (let row = 0; row < arr.length; row++) {
+    for (let col = 0; col < arr[0].length; col++) {
+      if (arr[row][col] === null) {
+        return [row, col]
+      }
     }
-    throw Error("Invalid array");
+  }
+  throw Error('Invalid array')
 }
 
 /**
@@ -82,5 +72,5 @@ export function getEmptyPosition(arr: Array<Array<number | null>>): [number, num
  * @returns True if the game is won.
  */
 export function isWin(arr: Array<Array<number | null>>): boolean {
-    return arr.flat(Infinity).join("") === "12345678null";
+  return arr.flat(Infinity).join('') === '12345678null'
 }

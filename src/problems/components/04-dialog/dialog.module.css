@@ -1,0 +1,12 @@
+/* Dialog Component Styles */
+.container::backdrop {
+    background-color: rgba(0, 0, 0, 0.2);
+    filter: blur(6px);
+}
+
+.container {
+    border-radius: 8px;
+    margin: auto;
+    border: none;
+    filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.2));
+}

@@ -3,11 +3,13 @@
 **Difficulty**: `medium`
 
 ## Goal
+
 Create a 3x3 grid game (also known as the 8-puzzle) containing tiles numbered 1 through 8 and one empty space. The objective is to rearrange the tiles from a random configuration into sequential order (1-8), leaving the last cell empty.
 
 ## Requirements
 
 ### Core Functionality
+
 1.  **Rendering**:
     - Display a 3x3 grid.
     - Render tiles numbered 1 to 8.
@@ -21,6 +23,7 @@ Create a 3x3 grid game (also known as the 8-puzzle) containing tiles numbered 1 
     - Display a "Win" message or status when this condition is met.
 
 ### Accessibility (A11y)
+
 1.  Ensure the grid and tiles are keyboard accessible (optional but recommended).
 2.  Use standard semantic HTML (buttons or interactive divs with ARIA roles) if possible.
 3.  Ensure sufficient color contrast for numbers.

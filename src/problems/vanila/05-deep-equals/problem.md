@@ -49,16 +49,13 @@ deepEquals({ a: 1, b: 2 }, { b: 2, a: 1 }) // true (order doesn't matter)
 deepEquals({ a: 1 }, { a: 2 }) // false
 
 // Nested structures
-deepEquals(
-  { users: [{ name: 'John' }] },
-  { users: [{ name: 'John' }] }
-) // true
+deepEquals({ users: [{ name: 'John' }] }, { users: [{ name: 'John' }] }) // true
 
 // Circular references
-const a = { value: 1 };
-a.self = a;
-const b = { value: 1 };
-b.self = b;
+const a = { value: 1 }
+a.self = a
+const b = { value: 1 }
+b.self = b
 deepEquals(a, b) // true (should not stack overflow)
 ```
 

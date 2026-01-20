@@ -28,22 +28,22 @@ function stringify<T>(value: T): string
 
 ```typescript
 // Primitives
-stringify(null)      // "null"
-stringify(42)        // "42"
-stringify(true)      // "true"
-stringify('hello')   // "\"hello\""
+stringify(null) // "null"
+stringify(42) // "42"
+stringify(true) // "true"
+stringify('hello') // "\"hello\""
 
 // Arrays
-stringify([1, 2, 3])           // "[1,2,3]"
+stringify([1, 2, 3]) // "[1,2,3]"
 
 // Objects
-stringify({ a: 1 })            // "{ a: 1 }"
-stringify({ name: 'John' })    // "{ name: \"John\" }"
+stringify({ a: 1 }) // "{ a: 1 }"
+stringify({ name: 'John' }) // "{ name: \"John\" }"
 
 // Circular reference
-const obj = { a: 1 };
-obj.self = obj;
-stringify(obj)  // "{ a: 1, self: [Circular] }"
+const obj = { a: 1 }
+obj.self = obj
+stringify(obj) // "{ a: 1, self: [Circular] }"
 ```
 
 ## Hints
