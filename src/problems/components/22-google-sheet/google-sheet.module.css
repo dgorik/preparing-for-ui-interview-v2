@@ -14,8 +14,6 @@
   overflow: hidden;
 }
 
-
-
 .header.resize-vertical {
   resize: vertical;
 }
@@ -26,4 +24,37 @@
 
 .header::-webkit-resizer {
   display: none;
+}
+
+.menu {
+  background-color: rgb(241, 241, 241);
+  border-radius: 0.5rem;
+}
+
+.button {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: none;
+}
+
+.button:hover {
+  background-color: rgb(223, 223, 223);
+}
+
+.formula {
+  width: 100%;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.strikethrough {
+  text-decoration: line-through;
 }

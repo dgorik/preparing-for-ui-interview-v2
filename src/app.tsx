@@ -68,6 +68,10 @@ import {
   PortfolioVisualizerExample,
   PortfolioVisualizerVanillaExample,
 } from './problems/components/18-portfolio-visualizer/portfolio-visualizer.example'
+import {
+  GoogleSheetExample,
+  GoogleSheetVanillaExample,
+} from './problems/components/22-google-sheet/google-sheet.example'
 
 // Import problem markdown files (Bun text imports)
 import toastProblem from './problems/components/10-toast/problem.md' with { type: 'text' }
@@ -82,6 +86,7 @@ import squareGameProblem from './problems/components/12-square-game/problem.md' 
 import progressBarProblem from './problems/components/16-progress-bar/problem.md' with { type: 'text' }
 import uploadComponentProblem from './problems/components/17-upload-component/problem.md' with { type: 'text' }
 import portfolioVisualizerProblem from './problems/components/18-portfolio-visualizer/problem.md' with { type: 'text' }
+import googleSheetProblem from './problems/components/22-google-sheet/problem.md' with { type: 'text' }
 import infiniteCanvasProblem from './problems/components/21-infinite-canvas/problem.md' with { type: 'text' }
 import galleryProblem from './problems/components/08-gallery/problem.md' with { type: 'text' }
 import gptChatProblem from './problems/components/20-gpt-chat/problem.md' with { type: 'text' }
@@ -562,6 +567,16 @@ const SECTIONS = {
         variants: {
           overview: { component: createProblemOverview(infiniteCanvasProblem) },
           react: { component: InfiniteCanvasExample },
+        },
+      },
+      googleSheet: {
+        id: 'googleSheet',
+        name: 'Google Sheet',
+        difficulty: 'extreme',
+        variants: {
+          overview: { component: createProblemOverview(googleSheetProblem) },
+          react: { component: GoogleSheetExample },
+          vanilla: { component: GoogleSheetVanillaExample },
         },
       },
     } as Record<string, TProblem>,
@@ -1079,7 +1094,7 @@ export default function App() {
           })}
         </div>
         <div className={css.content}>
-          {}
+          {/* eslint-disable-next-line react-hooks/static-components */}
           {SelectedComponent ? <SelectedComponent /> : <NotFound />}
         </div>
       </div>
