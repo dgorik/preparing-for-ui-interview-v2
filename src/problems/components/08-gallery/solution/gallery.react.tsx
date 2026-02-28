@@ -18,9 +18,7 @@ export const Gallery = ({ images }: TGalleryProps) => {
     setCurrentIndex((prevIndex) => Math.min(images.length - 1, prevIndex + 1))
   }, [images.length])
 
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index)
-  }
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -33,17 +31,17 @@ export const Gallery = ({ images }: TGalleryProps) => {
 
   if (images.length === 0) {
     return (
-      <section className={css.container}>
-        <div className={css.empty}>No images to display</div>
+      <section className={cx(flex.w100, flex.pRel, css.container)}>
+        <div className={cx(flex.flexRowCenter, flex.h100, css.empty)}>No images to display</div>
       </section>
     )
   }
 
   return (
-    <section className={css.container}>
+    <section className={cx(flex.w100, flex.pRel, css.container)}>
       <button
         disabled={currentIndex === 0}
-        className={cx(css.button, css.buttonPrev)}
+        className={cx(css.button, flex.pAbs, flex.top0, flex.left0, flex.z1, flex.bgBlack4, flex.h100, flex.shadow2, flex.cWhite7, flex.bNone)}
         onClick={handlePrev}
         aria-label="Previous image"
       >
@@ -51,13 +49,14 @@ export const Gallery = ({ images }: TGalleryProps) => {
       </button>
 
       <ul
-        className={cx(flex.flexRowStart, css.list)}
+        className={cx(flex.itemsStretch, flex.h100, css.list)}
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {images.map((image, index) => {
           return (
-            <li key={index} className={css.item}>
+            <li key={index} className={cx(flex.wh100, css.item)}>
               <img
+                className={flex.wh100}
                 src={currentIndex + 2 >= index ? image : undefined}
                 alt={`Gallery image ${index + 1}`}
               />
@@ -68,19 +67,19 @@ export const Gallery = ({ images }: TGalleryProps) => {
 
       <button
         disabled={currentIndex === images.length - 1}
-        className={cx(css.button, css.buttonNext)}
+        className={cx(css.button, flex.pAbs, flex.top0, flex.right0, flex.z1, flex.bgBlack4, flex.h100, flex.shadow2, flex.cWhite7, flex.bNone)}
         onClick={handleNext}
         aria-label="Next image"
       >
         {'>'}
       </button>
 
-      <div className={css.indicators}>
+      <div className={cx(flex.justifyCenter, flex.flexGap8, flex.pAbs, flex.left0, flex.right0, flex.z1, css.indicators)}>
         {images.map((_, index) => (
           <button
             key={index}
-            className={cx(css.dot, currentIndex === index ? css.dotActive : '')}
-            onClick={() => goToSlide(index)}
+            className={cx(css.dot, flex.bgWhite5, flex.br128, currentIndex === index ? css.dotActive : '')}
+            onClick={() => setCurrentIndex(index)}
             aria-label={`Go to image ${index + 1}`}
           />
         ))}
