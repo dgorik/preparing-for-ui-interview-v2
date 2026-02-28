@@ -29,3 +29,9 @@ The component should accept the following props:
 ## Test Cases
 
 1. [Test Case 1]
+
+## Run Tests
+
+```bash
+bun test src/problems/components/18-markdown/markdown-parser.test.ts
+```
