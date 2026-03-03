@@ -60,11 +60,7 @@ import {
   UploadComponentExample,
   UploadComponentStudentExample,
 } from './problems/components/15.2-upload-component/upload-component.example'
-import {
-  InfiniteCanvasExample,
-  InfiniteCanvasStudentExample,
-  // InfiniteCanvasStudentVanillaExample - Not implemented
-} from './problems/components/19-infinite-canvas/infinite-canvas.example'
+
 import {
   GalleryExample,
   GalleryVanillaExample,
@@ -106,20 +102,28 @@ import {
   DialogStudentExample,
 } from './problems/components/04-dialog/dialog.example'
 import {
-  PortfolioVisualizerExample,
-  PortfolioVisualizerVanillaExample,
-  PortfolioVisualizerStudentExample,
-  PortfolioVisualizerStudentVanillaExample,
-} from './problems/components/16-portfolio-visualizer/portfolio-visualizer.example'
+  PortfolioVisualizerExample as PortfolioVisualizerUxExample,
+  PortfolioVisualizerVanillaExample as PortfolioVisualizerUxVanillaExample,
+  PortfolioVisualizerStudentExample as PortfolioVisualizerUxStudentExample,
+  PortfolioVisualizerStudentVanillaExample as PortfolioVisualizerUxStudentVanillaExample,
+} from './problems/components/16.1-portfolio-visualizer-ux/portfolio-visualizer.example'
+import {
+  PortfolioVisualizerExample as PortfolioVisualizerLogicExample,
+  PortfolioVisualizerVanillaExample as PortfolioVisualizerLogicVanillaExample,
+  PortfolioVisualizerStudentExample as PortfolioVisualizerLogicStudentExample,
+  PortfolioVisualizerStudentVanillaExample as PortfolioVisualizerLogicStudentVanillaExample,
+} from './problems/components/16.2-portfolio-visualizer-logic/portfolio-visualizer.example'
+import { TableEngineExample as BasicEngineExample } from './problems/components/19 - google sheet/19.1-google-sheet-basic/table-engine.example.tsx'
+import { TableEngineExample as CompileEngineExample } from './problems/components/19 - google sheet/19.2-google-sheet-compile/table-engine.example.tsx'
+import { TableEngineExample as TopoEngineExample } from './problems/components/19 - google sheet/19.3-google-sheet-topo/table-engine.example.tsx'
+import { TableEngineExample as EvalEngineExample } from './problems/components/19 - google sheet/19.4-google-sheet-eval/table-engine.example.tsx'
+import { TableEngineExample as RecomputeEngineExample } from './problems/components/19 - google sheet/19.5-google-sheet-recompute/table-engine.example.tsx'
 import {
   GoogleSheetExample,
   GoogleSheetVanillaExample,
   GoogleSheetStudentExample,
   GoogleSheetStudentVanillaExample,
-} from './problems/components/20.4-google-sheet-ux/google-sheet.example'
-import { ParserExample } from './problems/components/20.1-google-sheet-parser/parser.example'
-import { TopoExample } from './problems/components/20.2-google-sheet-topo/topo.example'
-import { TableEngineExample } from './problems/components/20.3-google-sheet-engine/table-engine.example'
+} from './problems/components/19 - google sheet/19.6-google-sheet-ux/google-sheet.example.tsx'
 
 // Import problem markdown files (Bun text imports)
 import toastProblem from './problems/components/10-toast/problem.md' with { type: 'text' }
@@ -134,12 +138,15 @@ import squareGameProblem from './problems/components/12-square-game/problem.md' 
 import progressBarProblem from './problems/components/14-progress-bar/problem.md' with { type: 'text' }
 import uploadComponentProblem from './problems/components/15.2-upload-component/problem.md' with { type: 'text' }
 import useFileUploadProblem from './problems/components/15.1-use-file-upload/problem.md' with { type: 'text' }
-import portfolioVisualizerProblem from './problems/components/16-portfolio-visualizer/problem.md' with { type: 'text' }
-import googleSheetProblem from './problems/components/20.4-google-sheet-ux/problem.md' with { type: 'text' }
-import parserProblem from './problems/components/20.1-google-sheet-parser/problem.md' with { type: 'text' }
-import topoProblem from './problems/components/20.2-google-sheet-topo/problem.md' with { type: 'text' }
-import tableEngineProblem from './problems/components/20.3-google-sheet-engine/problem.md' with { type: 'text' }
-import infiniteCanvasProblem from './problems/components/19-infinite-canvas/problem.md' with { type: 'text' }
+import portfolioVisualizerUxProblem from './problems/components/16.1-portfolio-visualizer-ux/problem.md' with { type: 'text' }
+import portfolioVisualizerLogicProblem from './problems/components/16.2-portfolio-visualizer-logic/problem.md' with { type: 'text' }
+import tableEngineBasicProblem from './problems/components/19 - google sheet/19.1-google-sheet-basic/problem.md' with { type: 'text' }
+import tableEngineCompileProblem from './problems/components/19 - google sheet/19.2-google-sheet-compile/problem.md' with { type: 'text' }
+import tableEngineTopoProblem from './problems/components/19 - google sheet/19.3-google-sheet-topo/problem.md' with { type: 'text' }
+import tableEngineEvalProblem from './problems/components/19 - google sheet/19.4-google-sheet-eval/problem.md' with { type: 'text' }
+import tableEngineRecomputeProblem from './problems/components/19 - google sheet/19.5-google-sheet-recompute/problem.md' with { type: 'text' }
+import googleSheetProblem from './problems/components/19 - google sheet/19.6-google-sheet-ux/problem.md' with { type: 'text' }
+
 import galleryProblem from './problems/components/08-gallery/problem.md' with { type: 'text' }
 import gptChatProblem from './problems/components/18-gpt-chat/problem.md' with { type: 'text' }
 
@@ -596,16 +603,28 @@ const SECTIONS = {
           studentReact: { component: UploadComponentStudentExample },
         },
       },
-      portfolioVisualizer: {
-        id: 'portfolioVisualizer',
-        name: 'Portfolio Visualizer',
+      portfolioVisualizerUx: {
+        id: '16.1',
+        name: 'Portfolio Visualizer (UX)',
         difficulty: 'extreme',
         variants: {
-          overview: { component: createProblemOverview(portfolioVisualizerProblem) },
-          react: { component: PortfolioVisualizerExample },
-          vanilla: { component: PortfolioVisualizerVanillaExample },
-          studentReact: { component: PortfolioVisualizerStudentExample },
-          studentVanilla: { component: PortfolioVisualizerStudentVanillaExample },
+          overview: { component: createProblemOverview(portfolioVisualizerUxProblem) },
+          react: { component: PortfolioVisualizerUxExample },
+          vanilla: { component: PortfolioVisualizerUxVanillaExample },
+          studentReact: { component: PortfolioVisualizerUxStudentExample },
+          studentVanilla: { component: PortfolioVisualizerUxStudentVanillaExample },
+        },
+      },
+      portfolioVisualizerLogic: {
+        id: '16.2',
+        name: 'Portfolio Visualizer (Logic)',
+        difficulty: 'extreme',
+        variants: {
+          overview: { component: createProblemOverview(portfolioVisualizerLogicProblem) },
+          react: { component: PortfolioVisualizerLogicExample },
+          vanilla: { component: PortfolioVisualizerLogicVanillaExample },
+          studentReact: { component: PortfolioVisualizerLogicStudentExample },
+          studentVanilla: { component: PortfolioVisualizerLogicStudentVanillaExample },
         },
       },
       markdown: {
@@ -630,46 +649,54 @@ const SECTIONS = {
           studentVanilla: { component: GptChatStudentVanillaExample },
         },
       },
-      infiniteCanvas: {
-        id: 'infiniteCanvas',
-        name: 'Infinite Canvas',
-        difficulty: 'extreme',
+      googleSheetBasic: {
+        id: '19.1',
+        name: '19.1 GS: Basic',
+        difficulty: 'medium',
         variants: {
-          overview: { component: createProblemOverview(infiniteCanvasProblem) },
-          react: { component: InfiniteCanvasExample },
-          studentReact: { component: InfiniteCanvasStudentExample },
+          overview: { component: createProblemOverview(tableEngineBasicProblem) },
+          example: { component: BasicEngineExample },
         },
       },
-      googleSheetParser: {
-        id: '20.1',
-        name: '20.1 Google Sheet Parser',
-        difficulty: 'extreme',
+      googleSheetCompile: {
+        id: '19.2',
+        name: '19.2 GS: Compile',
+        difficulty: 'medium',
         variants: {
-          overview: { component: createProblemOverview(parserProblem) },
-          example: { component: ParserExample },
+          overview: { component: createProblemOverview(tableEngineCompileProblem) },
+          example: { component: CompileEngineExample },
         },
       },
       googleSheetTopo: {
-        id: '20.2',
-        name: '20.2 Google Sheet Topo Sort',
-        difficulty: 'extreme',
+        id: '19.3',
+        name: '19.3 GS: Topo Sort',
+        difficulty: 'hard',
         variants: {
-          overview: { component: createProblemOverview(topoProblem) },
-          example: { component: TopoExample },
+          overview: { component: createProblemOverview(tableEngineTopoProblem) },
+          example: { component: TopoEngineExample },
         },
       },
-      googleSheetEngine: {
-        id: '20.3',
-        name: '20.3 Google Sheet Engine',
+      googleSheetEval: {
+        id: '19.4',
+        name: '19.4 GS: Eval',
+        difficulty: 'hard',
+        variants: {
+          overview: { component: createProblemOverview(tableEngineEvalProblem) },
+          example: { component: EvalEngineExample },
+        },
+      },
+      googleSheetRecompute: {
+        id: '19.5',
+        name: '19.5 GS: Recompute',
         difficulty: 'extreme',
         variants: {
-          overview: { component: createProblemOverview(tableEngineProblem) },
-          example: { component: TableEngineExample },
+          overview: { component: createProblemOverview(tableEngineRecomputeProblem) },
+          example: { component: RecomputeEngineExample },
         },
       },
       googleSheetUx: {
-        id: '20.4',
-        name: '20.4 Google Sheet UX',
+        id: '19.6',
+        name: '19.6 GS: UX',
         difficulty: 'extreme',
         variants: {
           overview: { component: createProblemOverview(googleSheetProblem) },

@@ -1,0 +1,27 @@
+.container {
+  display: grid;
+  grid-template-columns: repeat(27, 1fr);
+}
+
+.cell {
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+  text-align: center;
+  background-color: rgb(250, 250, 250);
+  color: rgb(51, 51, 51);
+  overflow: hidden;
+}
+
+.header.resize-vertical {
+  resize: vertical;
+}
+
+.header.resize-horizontal {
+  resize: horizontal;
+}
+
+.header::-webkit-resizer {
+  display: none;
+}

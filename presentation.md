@@ -3782,6 +3782,7 @@ const progressBarProps = {
    `const percentage = Math.min(100, Math.max(0, (value / max) * 100))`
 
 2. **Render the Structure**:
+
    ```tsx
    return (
      <div
@@ -3895,303 +3896,735 @@ With `role="progressbar"`, dynamic updates to `aria-valuenow` will be announced 
 
 ### Slide 136: Component 15.1 - File Upload Hook
 
-File uploads are everywhere - profile pictures, document attachments, drag-and-drop zones. However, building a good one is hard because you have to manage a lot of state: progress, speed, errors, and pause/resume capability.
+File uploads are everywhere - profile pictures, document attachments, drag-and-drop zones. However, building a robust one requires managing a lot of state: progress, speed, errors, and pause/resume capability.
 
 The best pattern in React is to **separate the complex logic into a custom hook**, keeping the UI component clean.
 
 Key challenges for the hook:
 
 - **State Management**: Progress tracking, speed calculation, remaining time
-- **File Validation**: Checking sizes and MIME types
-- **API Simulation**: Simulating chunked uploads for this interview problem
+- **Resumable Uploads**: Slicing the file to resume from where it left off
+- **XHR Network Requests**: Using `XMLHttpRequest` for its rich `upload.onprogress` events instead of `fetch`
 
 Let's think it through:
 
 - **What do we need?** A hook that returns state and control functions
-- **Data shape?** `[UploadState, UploadControls]`
-- **The pattern?** **Custom Hook + Simulation** using timers/intervals
+- **Data shape?** `[TUploadState, TUploadControls]`
+- **The pattern?** **Custom Hook + XHR** with `useRef` to track active requests and offsets
 
 ---
 
 ### Slide 137: File Upload Hook - Step 1: Input Data Sample
 
-The hook accepts a configuration object with validation rules.
+The hook doesn't take configuration, but it works with the browser's native `File` object.
 
 ```typescript
-const [state, controls] = useFileUpload({
-  accept: ['image/png', 'image/jpeg'],
-  maxSize: 5 * 1024 * 1024, // 5MB limit
-  onError: (errors) => console.error(errors),
-})
+// Component usage:
+const [state, controls] = useFileUpload()
 
-// state: { progress: 45, status: 'uploading', speed: '1.2 MB/s', ... }
-// controls: { start: fn, pause: fn, resume: fn, cancel: fn }
+// The 'file' is usually obtained from an <input type="file" /> or a drop event
+const handleFile = (file: File) => {
+  controls.start(file) // Starts upload from byte 0
+}
+
+// State shape updates as the upload progresses:
+// state = {
+//   status: 'uploading',
+//   progress: 45.5,
+//   speed: 1024, // KB/s
+//   bytes: 465300,
+//   remainingTimeMs: 5000,
+//   error: null
+// }
 ```
 
 ---
 
-### Slide 138: File Upload Hook - Step-by-Step Implementation
+### Slide 137.1: File Upload Hook - Why XMLHttpRequest?
 
-1. **Initialize State**:
+You might be wondering: _"Why use the older `XMLHttpRequest` instead of the modern `fetch` API?"_
 
-   ```typescript
-   const [status, setStatus] = useState<UploadStatus>('idle')
-   const [progress, setProgress] = useState(0)
-   ```
+The short answer: **`fetch` does not support upload progress events**.
+If you want to show users a progress bar for a file they are sending _to_ the server, `fetch` can only tell you when the request starts and when it finishes.
 
-2. **Simulation Logic**:
-   Because we aren't using a real server, we simulate uploading chunks using `setInterval` or `requestAnimationFrame`. We artificially increment `progress`.
+`XMLHttpRequest` provides the `xhr.upload.onprogress` event, which fires repeatedly with:
 
-3. **Speed Calculation**: Track `bytesUploaded` over `timeElapsed` to compute MB/s.
+- `e.loaded`: How many bytes have currently been sent
+- `e.total`: Total size of the payload being sent
+- `e.lengthComputable`: A boolean confirming the browser knows the payload size
 
-4. **Pause/Resume Support**: Store the current simulation timer ID in a ref, clear it on pause, and start a new one from the current progress on resume.
-
-5. **Expose Controls**: Return the bounded functions `start(files)`, `pause()`, etc.
+This gives us the exact metrics necessary to calculate instantaneous upload speed and estimated remaining time!
 
 ---
 
-### Slide 139: Component 15.2 - File Upload UI
+### Slide 138: File Upload Hook - Step 2: Initialization
 
-With our hook handling the complex logic, the UI component just needs to wire up the DOM events (Drag & Drop, clicks, styling) to the hook!
+We need to track several pieces of mutable data that shouldn't trigger re-renders, like the active `XMLHttpRequest`, speed metrics, and the current byte offset.
 
-Key challenges for the UI:
+```typescript
+export function useFileUpload(): [TUploadState, TUploadControls] {
+  const [state, setState] = useState<TUploadState>(DEFAULT_STATE)
 
-- **Drag and drop** vs click to select
-- **Visual feedback** during drag-over
-- **Progress tracking** display
+  // Track the active request to abort it when paused/cancelled
+  const xhrRef = useRef<XMLHttpRequest | null>(null)
 
-Let's think it through:
+  // Track metrics for speed calculation (last bytes loaded, last timestamp)
+  const metricsRef = useRef({ lastLoaded: 0, lastTime: 0 })
 
-- **What do we need?** Drop zone, hidden file input, preview, progress bar
-- **The pattern?** **File API + drag/drop events** - `dragover`, `drop` hooked directly to our `useFileUpload.start` function
-- **Accessibility?** Label the input, clear ARIA states for the progress
-
----
-
-### Slide 140: File Upload UI - Step 1: Connecting the Hook
-
-The UI component imports the hook and renders based purely on its state.
-
-```tsx
-export function UploadComponent() {
-  const [state, { start, pause, resume, cancel }] = useFileUpload({
-    maxSize: 10 * 1024 * 1024,
-  })
-
-  return (
-    <div>
-      {/* Render Dropzone */}
-      {/* Render Stats based on state */}
-      {state.status === 'uploading' && <ProgressBar value={state.progress} />}
-    </div>
-  )
-}
+  // Track current successfully uploaded offset to use with slicing
+  const offsetRef = useRef(0)
+  // ...
 ```
 
 ---
 
-### Slide 141: File Upload UI - Drop Zone Events
+### Slide 138.1: File Upload Hook - Step 3: Cleanup Utility
+
+When an upload is paused, cancelled, or restarted, we need a way to cleanly abort any ongoing network request without throwing unhandled exceptions or triggering rogue state updates.
 
 ```typescript
-// Prevent browser from opening the file unexpectedly
-const handleDragOver = (e: React.DragEvent) => {
-  e.preventDefault()
-  setIsDragging(true) // Highlights the dropzone
-}
-
-const handleDragLeave = () => {
-  setIsDragging(false)
-}
-
-const handleDrop = (e: React.DragEvent) => {
-  e.preventDefault()
-  setIsDragging(false)
-
-  const files = Array.from(e.dataTransfer.files)
-  if (files.length > 0) {
-    start(files) // Hand off to our custom hook!
+// Helper to kill active requests silently without firing error events back to state.
+const cleanup = useCallback(() => {
+  if (xhrRef.current) {
+    xhrRef.current.abort() // Immediately terminates the network request
+    xhrRef.current = null // Clears the ref so we know nothing is active
   }
-}
+}, [])
 ```
 
 ---
 
-### Slide 142: File Upload UI - Hidden Input Trigger
+### Slide 138.2: File Upload Hook - Step 4: Starting the Upload (XHR)
 
-To allow clicking to upload (not just dragging), we use a hidden `<input type="file">` and trigger it via a button click using a `ref`.
+To upload the file (and support pausing/resuming later), we use `XMLHttpRequest`, sending a slice of the file.
 
-```tsx
-const fileInputRef = useRef<HTMLInputElement>(null)
+```typescript
+const start = useCallback(
+  (file: File, from: number = 0) => {
+    cleanup()
+    offsetRef.current = from
+    metricsRef.current = { lastLoaded: from, lastTime: performance.now() }
 
-return (
-  <>
-    <input
-      type="file"
-      ref={fileInputRef}
-      style={{ display: 'none' }}
-      onChange={(e) => start(Array.from(e.target.files || []))}
-    />
-    <button onClick={() => fileInputRef.current?.click()}>Select File</button>
-  </>
+    setState((prev) => ({
+      ...prev,
+      status: 'uploading',
+      progress: file.size > 0 ? (from / file.size) * 100 : 0,
+      bytes: from,
+    }))
+
+    const xhr = new XMLHttpRequest()
+    xhrRef.current = xhr
+
+    // Execute Request
+    xhr.open('POST', 'http://localhost:3000/api/upload')
+    xhr.setRequestHeader('X-File-Name', file.name)
+    // Send only the part of the file we haven't uploaded yet!
+    xhr.send(file.slice(from))
+
+    // ... event listeners ...
+  },
+  [cleanup],
 )
 ```
 
 ---
 
-### Slide 138: Component 16 - Portfolio Visualizer
+### Slide 138.3: File Upload Hook - Step 5: Tracking Progress & Speed
 
-This is a real-world component: a tree of investment allocations where editing a leaf value propagates UP to update all parent totals!
+By listening to `xhr.upload.onprogress`, we can calculate exactly how much has been sent and the current speed.
 
-Think of a file manager showing folder sizes, or a budget app with categories and subcategories.
+```typescript
+xhr.upload.onprogress = (e) => {
+  if (!e.lengthComputable) return
 
-Let's think it through:
+  const totalLoaded = from + e.loaded
+  offsetRef.current = totalLoaded
 
-- **What do we need?** Tree display, editable leaf values, computed parent totals, percentages
-- **Data shape?** Recursive `{ name, value, children?: [...] }` tree structure
-- **The pattern?** **Bottom-up propagation** - when a child changes, recalculate all ancestors
-- **Accessibility?** Tree structure with proper ARIA roles
+  const now = performance.now()
+  const timeDiffMs = now - metricsRef.current.lastTime
+  let newSpeed: number | null = null
+
+  // Calculate speed outside React batching to prevent race conditions
+  if (timeDiffMs >= 100 || metricsRef.current.lastLoaded === from || totalLoaded === file.size) {
+    if (timeDiffMs > 0) {
+      const loadedDiff = totalLoaded - metricsRef.current.lastLoaded
+      newSpeed = loadedDiff / 1024 / (timeDiffMs / 1000) // KB/s
+    }
+    metricsRef.current = { lastLoaded: totalLoaded, lastTime: now }
+  }
+
+  setState((prev) => {
+    const speed = newSpeed !== null ? newSpeed : prev.speed
+    const progress = file.size > 0 ? Math.min(100, (totalLoaded / file.size) * 100) : 0
+    let remainingTimeMs = null
+
+    if (speed > 0) {
+      remainingTimeMs = ((file.size - totalLoaded) / 1024 / speed) * 1000
+    }
+
+    return { ...prev, status: 'uploading', progress, speed, bytes: totalLoaded, remainingTimeMs }
+  })
+}
+```
 
 ---
 
-### Slide 139: Portfolio Visualizer - Step 1: Input Data Sample
+### Slide 138.4: File Upload Hook - Step 6: Events & Controls
 
-The Portfolio Visualizer takes a recursive tree of investment data, where parent nodes (categories) aggregate the values of their children (assets).
+Handle network outcomes and expose the control functions.
+
+```typescript
+xhr.onload = () => {
+  if (xhr.status >= 200 && xhr.status < 300) {
+    offsetRef.current = file.size
+    setState({
+      status: 'completed',
+      progress: 100,
+      speed: 0,
+      bytes: file.size,
+      remainingTimeMs: 0,
+      error: null,
+    })
+  } else {
+    setState((prev) => ({
+      ...prev,
+      status: 'error',
+      error: 'Upload failed',
+      remainingTimeMs: null,
+    }))
+  }
+}
+
+xhr.onerror = () =>
+  setState((prev) => ({ ...prev, status: 'error', error: 'Network error', remainingTimeMs: null }))
+// ...
+
+const pause = useCallback(() => {
+  cleanup()
+  setState((prev) => ({ ...prev, status: 'paused', speed: 0, remainingTimeMs: null }))
+}, [cleanup])
+
+const resume = useCallback(
+  (file: File) => {
+    start(file, offsetRef.current)
+  },
+  [start],
+)
+```
+
+---
+
+### Slide 139: Component 15.2 - Upload Component UI
+
+Now that `useFileUpload` handles all the complexity of XHR, chunking, and speed metrics, the UI component is incredibly lightweight.
+
+Key requirements for the UI:
+
+- **Clean aesthetic** — Built purely with utility classes, no custom CSS.
+- **File Selection** — A hidden `<input type="file">` triggered via a styled button.
+- **Rich Feedback** — Display `bytes` uploaded, current `speed`, and `remainingTimeMs`.
+- **Full Control** — Wire up the `pause`, `resume`, and `cancel` functions.
+
+---
+
+### Slide 140: Upload Component - Step 1: Connecting the Hook & Selection
+
+We grab the `state` and `controls` from our custom hook, and render a standard file input.
+
+```tsx
+export const UploadComponent = () => {
+  const [{ status, progress, speed, bytes, remainingTimeMs, error }, controls] = useFileUpload()
+  const [file, setFile] = useState<File | null>(null)
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (f) {
+      setFile(f)           // Set local state
+      controls.start(f)    // Pass to hook!
+    }
+  }
+
+  return (
+    <div>
+      {!file && (
+        <input
+          type="file"
+          onChange={onFile}
+          aria-label="Select a file to upload"
+        />
+      )}
+```
+
+---
+
+### Slide 141: Upload Component - Step 2: Displaying Progress
+
+While uploading, we display the file name along with formatted bytes and our instantaneous speed/time metrics.
+
+```tsx
+  <div className={flex.flexRowBetween}>
+    <b>{file.name}</b>
+    <span className={flex.fontM} aria-live="polite">
+      {formatBytes(bytes)} {status === 'uploading' && `· ${formatSpeed(speed)}`}
+      {status === 'uploading' && remainingTimeMs !== null && ` · ${formatTime(remainingTimeMs)}`}
+      {status === 'paused' && '· Paused'}
+      {status === 'completed' && '· Done'}
+    </span>
+  </div>
+
+  <ProgressBar
+    value={progress}
+    label={status === 'completed' ? 'Complete' : status === 'error' ? 'Failed' : `${Math.round(progress)}%`}
+  />
+```
+
+---
+
+### Slide 142: Upload Component - Step 3: Event Controls
+
+Finally, we expose the network control functions based on the current upload status. The `btnClass` is a shared constant for our utility styles.
+
+```tsx
+<div className={cx(flex.flexRowGap8, flex.justifyEnd)}>
+  {status === 'uploading' && (
+    <button onClick={controls.pause} className={btnClass} aria-label="Pause upload">
+      Pause
+    </button>
+  )}
+
+  {status === 'paused' && file && (
+    <button onClick={() => controls.resume(file)} className={btnClass} aria-label="Resume upload">
+      Resume
+    </button>
+  )}
+
+  {status !== 'completed' && (
+    <button onClick={reset} className={btnClass} aria-label="Cancel upload">
+      Cancel
+    </button>
+  )}
+
+  {status === 'completed' && (
+    <button onClick={reset} className={btnClass} aria-label="Upload another file">
+      Upload Another
+    </button>
+  )}
+</div>
+```
+
+---
+
+### Slide 143: Component 16.1 - Portfolio Visualizer (UX)
+
+This is a real-world component: a tree of investment allocations displaying a nested set of folders. **Let's start by just rendering the UI.**
+
+Think of a corporate budget system where departments are allocated funds, and sub-departments consume that specific budget. For now, we just want to look at the data structure and display it natively.
+
+Let's think it through:
+
+- **What do we need?** Tree display, readable text inputs, percentage math
+- **Data shape?** Recursive `{ name, value, children?: [...] }` tree structure
+- **Accessibility?** Tree structure with proper native semantic `details/summary` elements.
+
+---
+
+### Slide 144: Portfolio Visualizer (UX) - Input Data Sample
+
+The Portfolio Visualizer takes a recursive tree of investment data. Parent nodes represent fixed budgets.
 
 ```typescript
 const portfolioData = {
   name: 'Total Portfolio',
-  value: 0, // Computed automatically!
+  value: 10000, // Explicit budget!
   children: [
     {
       name: 'Stocks',
-      value: 0,
+      value: 8000, // Explicit sub-budget
       children: [
         { name: 'AAPL', value: 5000 },
         { name: 'TSLA', value: 3000 },
       ],
     },
-    { name: 'Bonds', value: 2000 },
+    { name: 'Bonds', value: 1500 }, 
   ],
 }
 ```
 
 ---
 
-### Slide 140: Portfolio Visualizer - Step-by-Step Implementation
+### Slide 145: Portfolio Visualizer (UX) - Implementation
 
-1. **Flatten tree into a Map** - Add `parentID` to each node for upward traversal:
+1. **Calculate Percentages**: Always relative to the immediate parent's `total` prop.
+2. **Render with `<details>/<summary>`**: Native browser expand/collapse for free!
+3. **Map the children**: Recursively render `<PortfolioNode />` components.
 
-   ```typescript
-   const store = new Map<string, TPortfolioStateNode>()
-   function prepare(node, parentID) { ... acc.set(node.id, { ...node, parentID }) }
-   ```
+```tsx
+function PortfolioNode({ id, name, value, children, total }: TPortfolioNode & { total: number }) {
+  const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : '0.00'
+  const hasChildren = children && children.length > 0
 
-2. **Render with `<details>/<summary>`** - Native expand/collapse for free
-
-3. **Input on change bubbles up** - Event delegation on container:
-
-   ```typescript
-   <div onChange={onNodeUpdate}>...</div>
-   ```
-
-4. **Prevent invalid edits** - Don't allow parent value < sum of children
-
-5. **Walk up the tree** - Update each ancestor:
-   ```typescript
-   while (current.parentID) {
-     const parent = newStore.get(current.parentID)
-     parent.value = parent.children.reduce((sum, ch) => sum + ch.value, 0)
-     current = parent
-   }
-   ```
-
----
-
-### Slide 141: Portfolio Visualizer - Tree Recalculation
-
-The core algorithm: traverse tree and recompute parent values from children.
-
-```typescript
-function recalculateTotals(node: TPortfolioNode): TPortfolioNode {
-  // Leaf node - value is already set
-  if (!node.children || node.children.length === 0) {
-    return node
-  }
-
-  // Branch node - recurse first, then sum
-  const updatedChildren = node.children.map(recalculateTotals)
-  const total = updatedChildren.reduce((sum, child) => sum + child.value, 0)
-
-  return {
-    ...node,
-    children: updatedChildren,
-    value: total, // Computed from children
-  }
-}
-```
-
-Call this after any leaf edit, passing the root node. React will re-render with the new tree!
-
----
-
-### Slide 142: Component 17 - Markdown Editor
-
-A live markdown editor with preview - type on the left, see rendered HTML on the right. This combines **parsing** with **split-pane UI**.
-
-The parsing part could be as simple as using a library like `marked`, or you could implement a basic parser for interview purposes.
-
-Let's think it through:
-
-- **What do we need?** Textarea input, live preview, optional syntax highlighting
-- **Data shape?** `markdown: string`, derived `html: string`
-- **The pattern?** **Controlled input + derived state** - parse markdown on every change
-- **Accessibility?** Label the editor, make preview readable
-
----
-
-### Slide 143: Markdown Editor - Step 1: Input Data Sample
-
-The input for a Markdown Editor is just the raw markdown string and an onChange handler.
-
-```typescript
-const markdownProps = {
-  initialValue: '# Hello World\n\nThis is **bold** text!',
-  onChange: (markdown: string, html: string) => {
-    // Save to database, etc.
-  },
-}
-```
-
----
-
-### Slide 144: Markdown - Basic Parser Approach
-
-For interviews, you might implement a simple subset:
-
-```typescript
-function parseMarkdown(text: string): string {
   return (
-    text
-      // Headers
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      // Bold and Italic
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      // Links
-      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
-      // Line breaks
-      .replace(/\n/g, '<br>')
+    <details open>
+      <summary>
+        <strong>{name}</strong>
+        <input type="text" defaultValue={value} readOnly={hasChildren} />
+        <output>{percentage}%</output>
+      </summary>
+      
+      {/* Map standard children recursively! */}
+      {hasChildren && children.map((ch) => <PortfolioNode total={value} key={ch.id} {...ch} />)}
+    </details>
   )
 }
 ```
 
-For production, use a proper parser like `marked` or `remark`!
+---
+
+### Slide 146: Component 16.2 - Portfolio Visualizer (Logic)
+
+This is a real-world component: a tree of investment allocations displaying a **budget-based model** where child nodes consume "Unallocated cash" from their parents!
+
+Think of a corporate budget system where departments are allocated funds, and sub-departments eat into that specific budget.
+
+Let's think it through:
+
+- **What do we need?** Tree display, editable text inputs (commit on Enter), strict budget validation, percentages
+- **Data shape?** Recursive `{ name, value, children?: [...] }` tree structure
+- **The pattern?** **Budget constraints** - values are explicit caps. When a node changes, it consumes its parent's unallocated cash.
+- **Accessibility?** Tree structure with proper native semantic `details/summary` elements.
 
 ---
 
-### Slide 145: Component 18 - GPT Chat (Streaming)
+### Slide 147: Portfolio Visualizer (Logic) - Constraints
+
+Now that we have the UX shell from **16.1**, we need to inject interactivity constraints for **16.2**.
+
+If a parent has $10,000, and children consume $8,000, where is the missing $2,000?
+
+1. **Dynamic Unallocated Cash**: We must dynamically inject pseudo-nodes for any leftover budget.
+2. **Growth Restriction**: Children cannot increase in value beyond their parent's unallocated cash bucket!
+3. **Reduction Restriction**: Parents cannot decrease in value below the sum of their children!
+4. **Enter-To-Submit**: Edits should only commit if the user explicitly presses **Enter**, resetting to defaults on blur.
+
+---
+
+### Slide 148: Portfolio Visualizer (Logic) - Data Flattening
+
+To update the tree bottom-up without overly complex recursive React state, we flatten the tree into a `Map` during initialization. Crucially, we add a `parentID` pointer to each node:
+
+```typescript
+function prepare(
+  data: TPortfolioNode,
+  parentID: string | null,
+  acc: Map<string, TPortfolioStateNode> = new Map()
+): [TPortfolioStateNode, Map<string, TPortfolioStateNode>] {
+  const node: TPortfolioStateNode = {
+    ...data,
+    parentID,
+    children: data.children?.map((ch) => prepare(ch, data.id, acc)[0]) || [],
+  }
+  acc.set(data.id, node)
+  return [node, acc]
+}
+```
+
+This allows $O(1)$ lookups when an input changes, and simple `while (current.parentID)` loops to walk back up the tree validating constraints!
+
+---
+
+### Slide 149: Portfolio Visualizer (Logic) - PortfolioNode State
+
+Each node manages its own local input state. This isolates typing from the complex tree validations until **Enter** is explicitly pressed! By abstracting the node into a generic `<PortfolioNode>`, we also elegantly compute and inject "Unallocated cash" on the fly:
+
+```tsx
+function PortfolioNode({ id, name, value, children, total, readonly }) {
+  const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : '0.00'
+  const [inputValue, setInputValue] = useState(String(value))
+
+  // Sync when tree is updated from the top down via Enter
+  useEffect(() => setInputValue(String(value)), [value])
+
+  const hasChildren = !!children?.length
+  const unallocated = hasChildren ? value - children!.reduce((sum, ch) => sum + ch.value, 0) : 0
+
+  return (
+    <details open>
+      <summary>
+        {/* ... component structure ... */}
+        <input
+          data-node-id={id}
+          value={readonly ? value : inputValue}
+          onChange={(e) => !readonly && setInputValue(e.target.value)}
+          onBlur={() => setInputValue(String(value))} // Revert if blurred without Enter
+        />
+        <output>{percentage}%</output>
+      </summary>
+
+      {/* Render children normally */}
+      {hasChildren && children!.map((ch) => <PortfolioNode total={value} key={ch.id} {...ch} />)}
+
+      {/* Dynamically inject the Unallocated cash leaf natively! */}
+      {hasChildren && unallocated > 0 && (
+        <PortfolioNode id={`${id}-unallocated`} name="Unallocated cash" value={unallocated} total={value} readonly />
+      )}
+    </details>
+  )
+}
+```
+
+---
+
+### Slide 150: Portfolio Visualizer (Logic) - Event Target Delegation
+
+Instead of passing massive constraint-validating callbacks through every array, we delegate event listening to the root!
+
+1. **Event Delegation** - Catch `Enter` keystrokes at the root container to avoid attaching listeners to every single node:
+
+   ```tsx
+   <div onKeyDown={handleKeyDown}>
+     {root && <PortfolioNode total={root.value} {...root} />}
+   </div>
+   ```
+
+2. **Validate Constraints** - Don't allow a parent's value to drop below its children's sum. Don't allow a child to increase beyond its parent's unallocated cash!
+
+3. **Update State** - Use `structuredClone` to elegantly deep clone the flattened `Map` while perfectly preserving the internal graph references (so children arrays remain intact!), then mutate and update!
+
+   ```typescript
+   const newStore = structuredClone(store)
+   newStore.get(id)!.value = newValue
+   setStore(newStore)
+   ```
+
+---
+
+### Slide 142: Component 17 - Markdown Parser
+
+Converting raw Markdown into React components is a classic problem. It tests your architectural thinking: can you break down a monolithic string-parsing problem into a scalable, secure, two-phase pipeline?
+
+The interview provides you with the exact Regex patterns and `TRichTextXMLNodes` enums. Your job is to build the engine itself!
+
+**The Architecture:**
+1. **Phase 1 (The Engine):** Pass the raw string through an array of scalable Rule classes, outputting an HTML string.
+2. **Phase 2 (The UI):** Securely parse the HTML string using the browser's native `DOMParser`, and recursively traverse the DOM tree to yield React Elements.
+
+---
+
+### Slide 143: Markdown Parser - Step 1: Provided Information
+
+You don't need to memorize complex RegEx for this interview. The interviewer will provide you with the following transformation rules. Notice how they capture Markdown syntax and transform it into intermediate HTML tags:
+
+| Syntax | Regular Expression | Note |
+|--------|--------------------|------|
+| **Links** | `/(^\|[^!])\[([^[]+)\]\(([^)]+)\)/g` | Excludes image links `![...]` |
+| **Headers** | `/^#{1}\s?([^\n]+)/gm` | (And similar for `h2`, `h3`, `h4`) |
+| **Bold** | `/(?<!\*)\*\*(?!\*)(.+?)(?<!\*)\*\*(?!\*)/g` | Uses lookarounds to avoid overlapping with italic |
+| **Italic** | `/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g` | Extracts text between single asterisks |
+| **Strikethrough** | `/~~\s?([^\n]+?)~~/g` | Wraps deleted text blocks |
+| **Tables** | `/^(\|.+\|\r?\n)(\|[-:\| ]+\|\r?\n)((?:\|.*\|\r?\n?)*)/gm` | Uses custom parsing function for rows |
+| **O. Lists** | `/(?:^\|\n)(?![^\n]*<[^>]*>)(\s*[0-9]+\.\s.*)+/g` | Handles ordered lists avoiding raw HTML |
+| **U. Lists** | `/(?:^\|\n)(?![^\n]*<[^>]*>)(\s*[-+]\s.*(?:\n\s*[-+]\s.*)*)/g`| Handles unordered lists avoiding raw HTML |
+| **Paragraph** | `/^(?!#)(?!.*<\/?(ul\|ol\|h1\|...\|p)>)(.*\S.*)$/gm` | Wraps unformatted text blocks |
+
+Our job is to ingest these RegEx tuples into a generalized OOP pipeline!
+
+---
+
+### Slide 144: Markdown Parser - Step 2: The Rule Engine
+
+The core is building a generic string replacer that doesn't care *what* it's replacing. We must implement `TRichTextRule` and `TRichTextPattern` from scratch to encapsulate the provided expressions!
+
+```typescript
+export class TRichTextPattern {
+  constructor(public regexp: RegExp, public replacer: string | Function) {}
+
+  apply(text: string) {
+    return text.replace(this.regexp, this.replacer as any)
+  }
+}
+
+export class TRichTextRule {
+  constructor(public name: string, public patterns: TRichTextPattern[]) {}
+
+  apply(text: string) {
+    return this.patterns.reduce((acc, pattern) => pattern.apply(acc), text)
+  }
+}
+```
+
+Now we have a generalized OOP pipeline!
+
+---
+
+### Slide 145: Markdown Parser - Step 3: Creating Rules
+
+With our engine built, defining transformation rules is as trivial as securely wrapping the provided Regex constants into our new classes. 
+
+**Simple Replacements (Strings)**
+```typescript
+const BOLD_RULE = new TRichTextRule('bold', [
+  new TRichTextPattern(REGEX_BOLD, '<b>$1</b>')
+])
+
+const HEADER_RULE = new TRichTextRule('header', [
+  new TRichTextPattern(REGEX_HEADER_4, '<h4>$1</h4>'),
+  new TRichTextPattern(REGEX_HEADER_3, '<h3>$1</h3>'),
+  new TRichTextPattern(REGEX_HEADER_2, '<h2>$1</h2>'),
+  new TRichTextPattern(REGEX_HEADER_1, '<h1>$1</h1>'),
+])
+```
+*Note: We check for H4 before H1, otherwise `####` would be matched as `<h1>###</h1>`!*
+
+---
+
+### Slide 146: Markdown Parser - Step 4: Custom Replacer Functions
+
+For complex HTML structures like Lists, a static string substitution won't work. By passing a **callback function** to our Pattern class, we can dynamically build the HTML chunk!
+
+```typescript
+const UNORDERED_LIST_REPLACER = (fullMatch: string) => {
+  // 1. Split the block by newlines
+  // 2. Wrap each line substring in <li> tags
+  const items = fullMatch
+    .trim()
+    .split('\n')
+    .reduce((acc, next) => acc + '<li>' + next.substring(2) + '</li>', '')
+    
+  // 3. Wrap the compiled list items in the parent <ul> container
+  return `<ul>${items}</ul>\n`
+}
+
+const LIST_RULE = new TRichTextRule('lists', [
+  new TRichTextPattern(REGEX_UNORDERED_LIST, UNORDERED_LIST_REPLACER)
+])
+```
+
+---
+
+### Slide 147: Markdown Parser - Step 5: Assembling the Pipeline
+
+Once you have securely defined every `TRichTextRule`, we simply load them into our unified configuration array.  
+
+```typescript
+export const RICH_TEXT_RULES: Array<TRichTextRule> = [
+  LINK_RULE,
+  HEADER_RULE,
+  TABLE_RULE,
+  LIST_RULE,
+  PARAGRAPH_RULE,
+  FORMATTING_RULE,
+]
+```
+
+**CRITICAL INSIGHT**: Order matters! 
+The engine **must** process Links `[text](url)` BEFORE Paragraphs, otherwise the URL string inside the link definition might accidentally trigger paragraph line-break rules.
+
+---
+
+### Slide 148: Markdown Parser - Step 6: Sequential Parsing
+
+To convert the raw markdown string into raw HTML, we simply `.reduce()` the input text through the `RICH_TEXT_RULES` array.
+
+```typescript
+export function parseRichText(text: string, rules: Array<TRichTextRule> = []) {
+  return rules.reduce((acc, rule) => rule.apply(acc), text)
+}
+```
+
+**CRITICAL INSIGHT**: Order matters! 
+The engine **must** process Links `[text](url)` BEFORE Paragraphs, otherwise the URL string inside the link definition might accidentally trigger paragraph line-break rules.
+
+---
+
+### Slide 146: Markdown Parser - Step 4: React Processing & Security
+
+Why not just output the HTML string and use React's `dangerouslySetInnerHTML`? 
+
+1. **Security:** Vulnerable to XSS if the input markdown naturally contains `<script>` tags.
+2. **Styling/Interactivity:** We want to render *native* React components, not blind HTML nodes.
+
+First, we sanitize the raw input using the native `DOMParser` to strip malicious pre-existing HTML nodes:
+
+```typescript
+function cleanMarkdownFromHTML(text: string) {
+  const xmlParser = new DOMParser()
+  try {
+    const xml = xmlParser.parseFromString(`<section>${text}</section>`, 'application/xml')
+    return xml.firstElementChild?.textContent || text // Extracts only flat text, stripping tags
+  } catch {
+    return text
+  }
+}
+```
+
+---
+
+### Slide 147: Markdown Parser - Step 5: Secure XML Parsing
+
+Now that we have sanitized text, we run our rule engine and use `DOMParser` to securely construct an in-memory document tree!
+
+```typescript
+const components = useMemo(() => {
+  const xmlParser = new DOMParser()
+  const rawText = cleanMarkdownFromHTML(text) // Strip real HTML tags
+  const rawXML = parseRichText(rawText, RICH_TEXT_RULES) // Convert Markdown to fake HTML tags
+  
+  try {
+    // Parse the fake HTML tags strictly into an interactive XML DOM tree
+    const xml = xmlParser.parseFromString(`<article>${rawXML}</article>`, 'application/xml')
+    return traverseXMLTree(xml)
+  } catch {
+    return <p>Markdown parsing failed</p>
+  }
+}, [text])
+```
+
+---
+
+### Slide 148: Markdown Parser - Step 6: Tree Traversal
+
+Finally, we recursively walk the XML DOM tree, converting native `node.nodeName` tags dynamically into React elements!
+
+```tsx
+function traverseXMLTree(node: Node | null): React.ReactNode {
+  if (node == null) return null
+
+  // 1. Handle base text nodes
+  if (node.nodeName === '#text') return node.textContent
+
+  // 2. Extract children recursively
+  const children = Array.from(node.childNodes).map((child, i) => (
+    <Fragment key={i}>{traverseXMLTree(child)}</Fragment>
+  ))
+
+  // 3. Extract dynamic attributes (like src, href, class)
+  const type = node.nodeName.toLowerCase()
+  const props: Record<string, any> = {}
+  
+  if (node instanceof Element) {
+    for (let i = 0; i < node.attributes.length; i++) {
+        const attr = node.attributes[i]
+        if (attr.name === 'class') props.className = attr.value
+        else props[attr.name] = attr.value
+    }
+  }
+
+  if (type === 'article') props.className = css.markdown
+
+  // Handle document root
+  if (type === '#document') {
+    if (node.childNodes.length > 0) return <>{children}</>
+    return node.textContent
+  }
+
+  // 4. Map DOM element types to React components dynamically!
+  return React.createElement(type, Object.keys(props).length ? props : null, ...children)
+}
+```
+
+---
+
+### Slide 149: Component 18 - GPT Chat (Streaming)
 
 This is a modern must-know: streaming responses from an API and displaying them with a typing animation. Think ChatGPT's interface!
 
@@ -4206,7 +4639,7 @@ Let's think it through:
 
 ---
 
-### Slide 146: GPT Chat - Step 1: Input Data Sample
+### Slide 150: GPT Chat - Step 1: Input Data Sample
 
 A GPT Chat component manages an ongoing conversation array, and frequently receives new chunks of text from a streaming API.
 
@@ -4226,89 +4659,78 @@ const conversation = [
 
 ---
 
-### Slide 147: GPT Chat - Step-by-Step Implementation
+### Slide 151: GPT Chat - Step-by-Step Implementation
 
-1. **Create `useMarkdownStream` hook** - Returns `{ stream, abort, inProgress }`:
+1. **Consume `useMarkdownStream`** - Destructure the provided network hook:
+   * `stream: (onChunk: (text: string) => void) => void` - Initiates the stream, calling your callback every time a new text fragment arrives.
+   * `abort: () => void` - Cancels the active stream.
+   * `inProgress: boolean` - Tracks if a stream is currently active.
 
-   ```typescript
-   const controllerRef = useRef<AbortController | null>(null)
-   const stream = (onChunk) => {
-     controllerRef.current?.abort()  // Abort previous
-     controller = new AbortController()
-     fetch(url, { signal: controller.signal })...
-   }
+   ```tsx
+   const { stream, abort, inProgress } = useMarkdownStream()
    ```
 
-2. **Buffer incoming chunks** - Store in state array as they arrive
+2. **Buffer incoming chunks** - Store them in a state array upon receipt.
 
-3. **Type with `requestAnimationFrame`** - Recursive character-by-character:
+3. **Type with `requestAnimationFrame`** - Build a recursive character-by-character typist. If it runs out of letters in the chunk, wait for the next chunk!
 
-   ```typescript
-   function tick() {
-     setContent((prev) => prev + chars)
-     if (rest.length > 0) requestAnimationFrame(tick)
-   }
-   ```
+4. **Process queued chunks** - When not typing and chunks exist in the queue, pop the next chunk and feed it to the typist.
 
-4. **Process queued chunks** - When not typing and chunks exist, pop and type
+5. **Auto-scroll** - `contentRef.current?.scrollTo({ top: scrollHeight, behavior: 'smooth' })`
 
-5. **Auto-scroll** - `contentRef.current.scrollTo({ top: scrollHeight, behavior: 'smooth' })`
-
-6. **Send/Stop button** - Swaps based on `inProgress` state
+6. **Send/Stop button** - Swap the button UI based on `inProgress` state.
 
 ---
 
-### Slide 148: GPT Chat - Streaming Fetch
+### Slide 152: GPT Chat - Buffering & Streaming
+
+When the user clicks Send, we call the provided `stream()` function and push the incoming string fragments into an array buffer to deal with bursty network topography:
 
 ```typescript
-async function streamResponse(onChunk: (text: string) => void): Promise<void> {
-  const response = await fetch('/api/chat', { method: 'POST' })
-  const reader = response.body!.getReader()
-  const decoder = new TextDecoder()
+const [chunks, setChunks] = useState<string[]>([])
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    const chunk = decoder.decode(value, { stream: true })
-    onChunk(chunk) // Process each chunk as it arrives
-  }
+const handleSend = () => {
+  setChunks([]) // Clear previous conversation buffer
+  
+  // The provided stream hook handles the raw Fetch ReadableStream API natively!
+  stream((newChunk) => {
+    setChunks((prev) => [...prev, newChunk])
+  })
 }
 ```
 
----
+### Slide 153: GPT Chat - Typing Animation
 
-### Slide 149: GPT Chat - Typing Animation
+```tsx
+const type = useCallback(function recursiveType(chunk: string) {
+  if (chunk.length === 0) return setIsTyping(false)
+  
+  const chars = chunk.slice(0, 2)
+  const rest = chunk.slice(2)
+  
+  setContent((prev) => prev + chars) // append mapped chunk limits
+  
+  if (rest.length > 0) requestAnimationFrame(() => recursiveType(rest))
+  else setIsTyping(false)
+  
+  contentRef.current?.scrollTo({ top: contentRef.current.scrollHeight })
+}, [])
 
-```typescript
-function typeText(chunks: string[], onChar: (char: string) => void): void {
-  let chunkIndex = 0
-  let charIndex = 0
-
-  function tick() {
-    if (chunkIndex >= chunks.length) return
-
-    const chunk = chunks[chunkIndex]
-    onChar(chunk[charIndex])
-    charIndex++
-
-    if (charIndex >= chunk.length) {
-      chunkIndex++
-      charIndex = 0
-    }
-
-    requestAnimationFrame(tick)
+useEffect(() => {
+  if (!isTyping && chunks.length > 0) {
+    setIsTyping(true)
+    const [nextChunk, ...rest] = chunks
+    setChunks(rest)
+    type(nextChunk)
   }
-
-  requestAnimationFrame(tick)
-}
+}, [chunks, isTyping, type])
 ```
 
 Buffer incoming chunks and type them out one character at a time with `requestAnimationFrame`!
 
 ---
 
-### Slide 150: Component 19 - Infinite Canvas
+### Slide 154: Component 19 - Infinite Canvas
 
 Our final component! An infinite, pannable, zoomable canvas - think Figma, Miro, or Google Maps.
 
@@ -4316,30 +4738,35 @@ This combines **CSS transforms** for pan/zoom with **pointer events** for intera
 
 Let's think it through:
 
-- **What do we need?** Draggable canvas, zoom in/out, content that can be placed anywhere
-- **Data shape?** `offset: { x, y }`, `scale: number`, `items: { x, y, content }[]`
-- **The pattern?** **CSS transform: translate() scale()** with pointer events for drag
-- **Accessibility?** Keyboard navigation for panning, zoom controls
+- **What do we need?** Draggable canvas, zoom in/out with cursor anchoring, and a Minimap bounding box
+- **Data shape?** `camera: { panX, panY, zoom }`
+- **The pattern?** **CSS transform: translate(${panX}px, ${panY}px) scale(${zoom})**
+- **Accessibility?** The canvas container itself should be focusable
 
 ---
 
-### Slide 151: Infinite Canvas - Step 1: Input Data Sample
+### Slide 155: Infinite Canvas - Step 1: Input Data Sample
 
-An Infinite Canvas manages an array of elements (shapes, text, images) with absolute coordinates, alongside the current viewport offset and zoom scale.
+An Infinite Canvas centers around managing the camera's viewport offset and zoom scale. The content rendered inside is technically irrelevant to the camera logic!
 
 ```typescript
-const canvasState = {
-  viewport: { x: 0, y: 0, scale: 1 },
-  elements: [
-    { id: '1', type: 'rectangle', x: 100, y: 150, width: 200, height: 100 },
-    { id: '2', type: 'text', x: 300, y: 300, content: 'Hello World' },
-  ],
+type TCameraState = {
+  zoom: number
+  panX: number
+  panY: number
 }
+
+// Initial state, assuming origin is centered
+const [camera, setCamera] = useState<TCameraState>({
+  zoom: 1,
+  panX: window.innerWidth / 2,
+  panY: window.innerHeight / 2,
+})
 ```
 
 ---
 
-### Slide 152: Infinite Canvas - Pan and Zoom
+### Slide 156: Infinite Canvas - Pan and Zoom
 
 ```typescript
 class InfiniteCanvas {
@@ -4374,7 +4801,7 @@ class InfiniteCanvas {
 
 ---
 
-### Slide 153: Infinite Canvas - Zoom to Cursor
+### Slide 157: Infinite Canvas - Zoom to Cursor
 
 ```typescript
 onWheel(event: WheelEvent): void {
@@ -4401,155 +4828,84 @@ The math ensures the point under your cursor stays in place as you zoom!
 
 ---
 
-### Slide 154: Component 20 - Google Sheets (The Big One!)
+### Slide 158: Component 19 - Google Sheets (The Big One!)
 
-Alright, this is the BOSS LEVEL component - a spreadsheet like Google Sheets or Excel! This isn't just one component, it's **4 interconnected parts** that test everything you've learned:
+Alright, this is the BOSS LEVEL component - a spreadsheet like Google Sheets or Excel! This isn't just one component, it's an interconnected engine that tests everything you've learned.
 
-```
-Part 1: Parser & Tokenizer    →  "How do we understand formulas?"
-Part 2: Topological Sorting   →  "In what order do we recalculate?"
-Part 3: Table Engine          →  "How does it all work together?"
-Part 4: User Experience       →  "How do we build the UI?"
-```
-
-This is the ultimate frontend interview problem because it combines:
+We have broken this ultimate frontend interview problem down into **6 incremental assignments** to master the concepts piece by piece:
 
 - **Parsing** (Computer Science fundamentals)
 - **Graph algorithms** (Dependency management)
 - **State management** (Complex reactive updates)
 - **Performance** (Rendering 500+ rows efficiently)
 
-Let's break it down piece by piece!
+Let's break down the engine module by module!
 
 ---
 
-### Slide 155: Google Sheets - Step 1: Input Data Sample
+### Slide 159: 19.1 Basic Getters & Setters
 
-A basic spreadsheet engine requires a map of raw cell values (including formulas) and a way to retrieve the evaluated results.
+#### Input Data Sample
+
+A basic spreadsheet engine requires tracking raw cell values (including formulas) and identifying a way to retrieve their evaluated results and relationships.
 
 ```typescript
-// Raw cell data entered by the user
 const rawData = new Map([
   ['A1', '10'],
   ['A2', '20'],
-  ['A3', '=SUM(A1, A2)'], // Formula referencing other cells
+  ['A3', '=A1+A2'], // Formula referencing other cells
   ['B1', '=A3 * 2'],
 ])
-
-// The engine evaluates this into:
-// A1: 10, A2: 20, A3: 30, B1: 60
 ```
+
+#### Step-by-Step Implementation
+
+1. **Setup Hash Maps**: Instantiate the `TableEngine` to track 4 `Map` structures:
+   - `#raw`: What the user typed (`"10"` or `"=A1+5"`)
+   - `#value`: The computed mathematical result (`"10"` or `"15"`)
+   - `#deps`: Direct dependencies (`A1` requires `B1` to compute)
+   - `#revDeps`: Reverse dependencies (`B1` affects `A1`, so `A1` recomputes if `B1` changes)
+
+2. **Basic Read APIs**: Implement `getValue`, `getRaw`, `getDeps`, `getRevDeps`. 
+
+3. **Fallback Factory**: For `getDeps`/`getRevDeps`, if the Map `get()` returns undefined, initialize and `#set` a new empty `Set<CellId>()` instead of throwing errors.
+
+4. **Basic Write API**: Create a `setRaw(id, raw)` method that blindly sets `#raw` and `#value` without any compilation or error checking yet. Return `{ changed: [id] }`.
 
 ---
 
-### Slide 156: Part 1 - Parser & Tokenizer (The Brain)
+### Slide 160: 19.2 Compilation
 
-First question: How do we even understand `=A1+B1*2`?
+#### Input Data Sample
 
-We need to convert it to something a computer can evaluate. The solution: **Reverse Polish Notation (RPN)** using the **Shunting-Yard algorithm**!
+Parsing mathematical expressions is a classic Computer Science problem, typically solved using **Reverse Polish Notation (RPN)** and the **Shunting-Yard algorithm**. 
 
-```
-Infix:    1 + 2 * 3      →  RPN: 1 2 3 * +
-Infix:    (1 + 2) * 3    →  RPN: 1 2 + 3 *
-```
+To keep this problem focused on React and Data Structures, **we have provided the parser for you**!
 
-Why RPN? It's trivial to evaluate with a stack:
+`"=A1 + B2 * 10"` becomes:
+1. Tokenize into logic blocks.
+2. Reverse Polish Notation stream (AST).
+3. Dependency mapping (Found `A1` and `B2` references).
 
-```
-RPN: 1 2 3 * +
+#### Step-by-Step Implementation
 
-Stack:
-  push 1      → [1]
-  push 2      → [1, 2]
-  push 3      → [1, 2, 3]
-  pop, pop, * → [1, 6]
-  pop, pop, + → [7]  ← Result!
-```
-
----
-
-### Slide 157: Parser - Tokenizer Implementation
-
-Step 1: Break the string into tokens:
-
-```typescript
-tokenize('1 + A1 * 2')
-// → [
-//   { t: 'num', v: 1 },
-//   { t: 'op', op: '+' },
-//   { t: 'ref', id: 'A1' },
-//   { t: 'op', op: '*' },
-//   { t: 'num', v: 2 }
-// ]
-```
-
-Key challenges:
-
-- **Unary minus**: Is `-5` a negative number or minus-five? Track previous token!
-- **Cell references**: Match `A1`, `Z99` with regex `/^[A-Z]\d+$/`
-- **Decimals**: Handle `.5` and `3.14`
-
-```typescript
-const isUnary = prev === 'start' || prev === 'op' || prev === 'lp'
-tokens.push({ t: 'op', op: isUnary ? 'NEG' : '-' })
-```
+1. **Import the Parser**: Bring in `tokenize(expr)` and `toRpn(tokens)`.
+2. **Build `#compile`**:
+   - Check if `raw` starts with `=`. If not, just delete any existing compiled state for this `id` and return an empty `Set` of dependencies.
+   - Run `tokenize` and `toRpn`. If either returns `ok: false`, save the `{ error: xxx }` state to the `#compiled` map and return an empty `Set`.
+   - Iterate over the final `rpn` tokens. If a token is of type `ref`, log its `id` to your dependencies set!
+3. **Build `#setDeps`**:
+   - Given a cell `id` and its newly computed `Set` of `nextDeps` from `#compile`...
+   - Grab its `prevDeps` from state.
+   - For every old dependency no longer present in the new set, *delete* `id` from that dependency's `#revDeps`.
+   - For every new dependency not present in the old set, *add* `id` to that dependency's `#revDeps`.
+   - Safe to forcefully update the `#deps` map now!
 
 ---
 
-### Slide 158: Parser - Shunting-Yard Algorithm
+### Slide 161: 19.3 Topological Sorting
 
-Step 2: Convert tokens to RPN using Dijkstra's Shunting-Yard:
-
-```typescript
-const precedence = { NEG: 3, '*': 2, '/': 2, '+': 1, '-': 1 }
-const isRightAssoc = (op) => op === 'NEG'
-
-for (const tok of tokens) {
-  if (tok.t === 'num' || tok.t === 'ref') {
-    output.push(tok) // Numbers/refs go straight to output
-  } else if (tok.t === 'op') {
-    // Pop higher precedence ops to output
-    while (ops.length && shouldPop(ops.top(), tok)) {
-      output.push(ops.pop())
-    }
-    ops.push(tok)
-  } else if (tok.t === 'lp') ops.push(tok)
-  else if (tok.t === 'rp') {
-    while (ops.top() !== '(') output.push(ops.pop())
-    ops.pop() // Discard '('
-  }
-}
-// Pop remaining ops
-while (ops.length) output.push(ops.pop())
-```
-
----
-
-### Slide 159: Parser - Step-by-Step Implementation
-
-Here's the complete parser implementation plan:
-
-1. **Define Token types**: `num`, `ref`, `op`, `lp`, `rp`
-
-2. **Tokenize function** - Loop through string:
-   - Skip whitespace
-   - Match parentheses `(` `)`
-   - Match operators `+ - * /`
-   - Match numbers (handle decimals)
-   - Match cell refs `/^[A-Z]\d+$/`
-   - Track `prev` token type for unary minus detection
-
-3. **toRpn function** - Shunting-Yard:
-   - `precedence` map for operator ordering
-   - `isRightAssoc` for NEG (unary minus)
-   - `popWhile` helper to pop higher precedence ops
-   - Handle parentheses matching
-
-4. **Error handling** - Return `{ ok: false, error: string }` for invalid input
-
----
-
-### Slide 160: Part 2 - Topological Sorting (The Order)
+#### Input Data Sample
 
 Here's the problem: When `A1` changes, which cells need recalculating?
 
@@ -4560,131 +4916,54 @@ C1 = A1 + B1  (depends on A1, B1)
 D1 = C1 * 2   (depends on C1)
 ```
 
-If A1 changes, we need: C1 recalculated BEFORE D1!
+If A1 changes, we need to recalculate C1 BEFORE D1!
 
-```
-Dependency Graph:
-    A1 ───┐
-          ├──→ C1 ───→ D1
-    B1 ───┘
-```
+Editing `A1` might affect `B1`, which affects `C1`. What if `C1` affects `A1`? That's an infinite loop (`#CYCLE!`)!
 
-**Topological order**: [A1, B1, C1, D1] - dependencies first!
+#### Step-by-Step Implementation
 
----
+1. **Build `#affectedFrom`**:
+   - Given a `start` cell `id`, run a **Breadth First Search (BFS)** across all of its `getRevDeps()`.
+   - Maintain an `affected` Set to track visited nodes.
+   - Using a `queue` array, iteratively push the cell's reverse dependencies onto the backlog until all downstream nodes are exhausted. Return the `affected` set.
 
-### Slide 161: Topological Sort - Kahn's Algorithm
-
-We use **Kahn's algorithm** to find the correct order:
-
-**Dependency Graph Visualization**:
-
-```mermaid
-graph LR
-    subgraph "Spreadsheet Dependencies"
-        A1["A1 = 10<br/>(in-degree: 0)"] --> C1["C1 = A1 + B1<br/>(in-degree: 2)"]
-        B1["B1 = 20<br/>(in-degree: 0)"] --> C1
-        C1 --> D1["D1 = C1 * 2<br/>(in-degree: 1)"]
-    end
-
-    subgraph "Processing Order"
-        O1["1. A1 ✓"] --> O2["2. B1 ✓"]
-        O2 --> O3["3. C1 ✓"]
-        O3 --> O4["4. D1 ✓"]
-    end
-```
-
-```typescript
-function topoSort(affected, getDeps, getRevDeps) {
-  // Step 1: Calculate in-degrees (number of dependencies)
-  const inDegree = new Map()
-  for (const id of affected) {
-    let deg = 0
-    for (const dep of getDeps(id)) {
-      if (affected.has(dep)) deg++
-    }
-    inDegree.set(id, deg)
-  }
-
-  // Step 2: Start with nodes that have no dependencies
-  const queue = [...inDegree].filter(([_, deg]) => deg === 0).map(([id]) => id)
-  const order = []
-
-  // Step 3: Process queue, decreasing dependents' in-degrees
-  while (queue.length) {
-    const id = queue.shift()
-    order.push(id)
-    for (const dependent of getRevDeps(id)) {
-      const next = inDegree.get(dependent) - 1
-      inDegree.set(dependent, next)
-      if (next === 0) queue.push(dependent)
-    }
-  }
-
-  // Any unprocessed nodes are cyclic!
-  const cyclic = new Set([...affected].filter((id) => !order.includes(id)))
-  return { order, cyclic }
-}
-```
+2. **Build `#topoSort` using Kahn's algorithm**:
+   - Accept the `affected` Set. Create a temporary `Map<CellId, number>` to track "in-degrees".
+   - **Calculate initial weights**: Iterate through every cell in the `affected` set. For each of its `getDeps()`, increment its in-degree count ONLY IF the dependency is ALSO inside the `affected` set.
+   - **Cull the queue**: Push all cells with an in-degree of `0` into a processing `queue`.
+   - **Process ordering**: Iterate through the processing `queue` (adding them to the final `order` timeline). As you process a node, decrement the in-degree score of all its `getRevDeps()`. If a descending node falls to an in-degree of `0`, immediately push it onto the processing `queue`!
+   - **Cycle Detection**: Any cells in the original `affected` set that didn't make it into your final `order` timeline are caught in an unbreakable circular reference!
 
 ---
 
-### Slide 162: Topological Sort - Cycle Detection
+### Slide 162: 19.4 Single Cell Evaluation
 
-What if we have a circular reference?
+#### Input Data Sample
 
-```
-A1 = B1
-B1 = A1
+Evaluating a compiled formula is just stacking operations dynamically based on the AST payload tokens.
 
-Graph: A1 ←──→ B1  (cycle!)
-```
+Tokens: `[ {t:'ref', id:'A1'}, {t:'val', n:5}, {t:'op', op:'+'} ]`
 
-Kahn's algorithm detects this automatically! If nodes remain unprocessed, they're cyclic:
+#### Step-by-Step Implementation
 
-```typescript
-if (order.length !== affected.size) {
-  // Some nodes couldn't be ordered = they're in a cycle
-  const cyclic = new Set()
-  for (const id of affected) {
-    if (!order.includes(id)) cyclic.add(id)
-  }
-}
-```
+1. **Build `#parseNumericCellValue`**:
+   - A helper to securely fetch actual digit values from the engine when executing a math equation.
+   - If the engine `#value` is blank, resolve to `0`.
+   - If the engine `#value` starts with `#` (like `#CYCLE!` or `#DIV/0!`), early-return the inherited error down the chain!
+   - If `!Number.isFinite(n)`, return an `#ERROR`. Lookups must be strictly numerical.
 
-Cyclic cells display: `#CYCLE!`
+2. **Build `_evalCell`**:
+   - The cell execution pipeline. If it doesn't start with `=`, just return the `#raw` text.
+   - Fetch the `#compiled` properties for this cell. If it failed to compile in 19.2, it contains an `{ error }` to return!
+   - Finally, run the `evalRpn` library utility, passing in your RPN formula stream and `this.#parseNumericCellValue.bind(this)` to serve as the external data lookup adapter!
 
 ---
 
-### Slide 163: Topological Sort - Step-by-Step Implementation
+### Slide 163: 19.5 Engine Recomputation
 
-1. **affectedFrom(start, getRevDeps)** - Find all cells to recalculate:
+#### Input Data Sample
 
-   ```typescript
-   const affected = new Set()
-   const queue = [start]
-   for (const id of queue) {
-     if (affected.has(id)) continue
-     affected.add(id)
-     for (const dep of getRevDeps(id)) queue.push(dep)
-   }
-   ```
-
-2. **topoSort(affected, getDeps, getRevDeps)** - Order them correctly:
-   - Calculate in-degrees within affected set
-   - BFS from in-degree 0 nodes
-   - Decrease dependents' in-degrees as you process
-   - Return `{ order, cyclic }`
-
-3. **Data structures**:
-   - `deps: Map<CellId, Set<CellId>>` - what each cell depends on
-   - `revDeps: Map<CellId, Set<CellId>>` - what depends on each cell
-
----
-
-### Slide 164: Part 3 - Table Engine (The Core)
-
-The Table Engine is the **brain** that ties everything together:
+Tying the entire Engine together! `setRaw('A1', '10')` must run compilation, sorting, and mathematical evaluation autonomously over the entire sheet.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -4695,138 +4974,40 @@ The Table Engine is the **brain** that ties everything together:
 │        ▼                                             │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐       │
 │  │ Compile  │───▶│ Update   │───▶│ Recompute│       │
-│  │ (Parser) │    │  Deps    │    │  (Topo)  │       │
+│  │ (19.2)   │    │  Deps    │    │  (19.3/4)│       │
 │  └──────────┘    └──────────┘    └──────────┘       │
 │        │              │               │              │
 │        ▼              ▼               ▼              │
 │   #compiled       #deps/#rev     Eval cells         │
-│                                  in order            │
+│                                  in Topo order      │
 │                                       │              │
 │                                       ▼              │
 │                              { changed: [...] }      │
 └─────────────────────────────────────────────────────┘
 ```
 
----
+#### Step-by-Step Implementation
 
-### Slide 165: Table Engine - Internal State
+1. **Build `#recomputeFrom`**:
+   - Pass the edited `start` cell `id` into `#affectedFrom`. 
+   - Pass that output into `#topoSort`.
+   - Create a `changed` array.
+   - Iterate over the `cyclic` array outputted from your Topo sort, and force update their `engine.#value` maps to `#CYCLE!`. Push them to `changed`.
+   - Iterate over the `order` chronological timeline outputted from your Topo sort. Ensure the cell is not in the circular array, then run `this._evalCell()` on it! Update its `engine.#value` to whatever the AST computed. Push to `changed`!
 
-The engine maintains 5 Maps:
-
-```typescript
-class TableEngine {
-  #raw: Map<CellId, string> // What user typed
-  #value: Map<CellId, string> // Computed result
-  #deps: Map<CellId, Set<CellId>> // Direct dependencies
-  #rev: Map<CellId, Set<CellId>> // Reverse dependencies
-  #compiled: Map<CellId, Compiled> // Parsed RPN
-}
-```
-
-Example state:
-
-```
-User input:   A1="10", B1="20", C1="=A1+B1", D1="=C1*2"
-
-#raw:    { A1: "10", B1: "20", C1: "=A1+B1", D1: "=C1*2" }
-#value:  { A1: "10", B1: "20", C1: "30", D1: "60" }
-#deps:   { C1: {A1,B1}, D1: {C1} }
-#rev:    { A1: {C1}, B1: {C1}, C1: {D1} }
-```
+2. **Finalize `setRaw`**:
+   - Ensure the overarching `setRaw` triggers compilation, dependency tracking, AND `#recomputeFrom()` sequentially, returning the `.changed` list back to the user interface!
 
 ---
 
-### Slide 166: Table Engine - setRaw Flow
+### Slide 164: 19.6 Google Sheet UX
 
-The most important method - when a cell changes:
+#### Input Data Sample
 
-```typescript
-setRaw(id: CellId, raw: string): { changed: CellId[] } {
-  // 1. Store the raw value
-  this.#raw.set(id, raw)
-
-  // 2. Compile formula (if starts with =)
-  const deps = this.#compile(id, raw)  // → tokenize → toRpn → extract refs
-
-  // 3. Update dependency graph
-  this.#setDeps(id, deps)  // Updates both deps and rev maps
-
-  // 4. Recompute affected cells
-  const changed = this.#recomputeFrom(id)
-
-  return { changed }  // UI needs to update these cells
-}
-```
-
----
-
-### Slide 167: Table Engine - RPN Evaluation
-
-Evaluating a compiled formula is just stack operations:
-
-```typescript
-#evalCell(id: CellId): string {
-  const compiled = this.#compiled.get(id)
-  if (!compiled || 'error' in compiled) return '#ERROR'
-
-  const stack: number[] = []
-
-  for (const tok of compiled.rpn) {
-    if (tok.t === 'num') stack.push(tok.v)
-    else if (tok.t === 'ref') {
-      const val = this.#parseNumericCellValue(tok.id)
-      if (!val.ok) return val.err  // Propagate errors
-      stack.push(val.n)
-    }
-    else if (tok.t === 'op') {
-      const b = stack.pop()!, a = stack.pop()!
-      switch (tok.op) {
-        case '+': stack.push(a + b); break
-        case '-': stack.push(a - b); break
-        case '*': stack.push(a * b); break
-        case '/': if (b === 0) return '#DIV/0!'; stack.push(a / b); break
-        case 'NEG': stack.push(-stack.pop()!); break
-      }
-    }
-  }
-  return String(stack[0])
-}
-```
-
----
-
-### Slide 168: Table Engine - Step-by-Step Implementation
-
-1. **Constructor** - Initialize 5 empty Maps
-
-2. **#compile(id, raw)** - Parse formula:
-   - Return empty deps if not a formula (no `=`)
-   - Tokenize → toRpn
-   - Extract cell refs from RPN as deps
-   - Store in `#compiled`
-
-3. **#setDeps(id, nextDeps)** - Update dependency graph:
-   - Remove old reverse deps
-   - Add new reverse deps
-   - Update `#deps`
-
-4. **#recomputeFrom(start)** - Recalculate:
-   - `affectedFrom(start, getRevDeps)` → find all cells
-   - `topoSort(affected, getDeps, getRevDeps)` → correct order
-   - Mark cyclic cells as `#CYCLE!`
-   - Evaluate in order
-   - Return changed cell IDs
-
----
-
-### Slide 169: Part 4 - User Experience (The UI)
-
-Finally, the visual part! Building a spreadsheet UI with React:
+Finally, the visual part! Building a spreadsheet UI with React. A 50x26 virtualized UI matrix representing `TableEngine`.
 
 ```
 ┌──────────────────────────────────────────────┐
-│ [B] [I] [S]                    =A1+B1        │  ← Toolbar + Formula Bar
-├──────────────────────────────────────────────┤
 │   │  A  │  B  │  C  │  D  │  ...             │  ← Column Headers
 ├───┼─────┼─────┼─────┼─────┼─────             │
 │ 1 │ 10  │ 20  │ 30  │     │                  │  ← Row 1
@@ -4837,188 +5018,40 @@ Finally, the visual part! Building a spreadsheet UI with React:
 └──────────────────────────────────────────────┘
 ```
 
-Key features:
+#### Step-by-Step Implementation
 
-- **Grid layout** with CSS Grid
-- **contentEditable** cells
-- **Focus** shows raw formula, **blur** shows computed value
-- **Formatting buttons** toggle CSS classes
+1. **Instantiate the Engine**:
+   - Keep a resilient UI pointer to a `new TableEngine()` reference somewhere inside the component.
 
----
+2. **Pre-render 500 Static Rows**:
+   - Do NOT map 500 rows into individual stateful React components. The DOM bloat will destroy frames during fast typing!
+   - Mount the cells as static HTML JSX payloads generated *outside* the component tree. Render them once!
 
-### Slide 170: Google Sheet UI - Cell Component
-
-The cell is the building block:
-
-```typescript
-function Cell({ column, row, value }: TCellProps) {
-  const isHeader = column === EMPTY
-  const isColHeader = row === 0
-  const role = isColHeader ? 'columnheader' : isHeader ? 'rowheader' : 'gridcell'
-
-  return (
-    <div
-      role={role}
-      data-column={String(column)}
-      data-row={row}
-      contentEditable={role === 'gridcell'}
-      className={cx(css.cell, (isColHeader || isHeader) && css.header)}
-      suppressContentEditableWarning
-    >
-      {value}
-    </div>
-  )
-}
-```
-
-**Key insight**: Pre-render 500 rows as static JSX, stored in a constant outside the component. Only the changed cells update via DOM manipulation!
+3. **Event Delegation (`onFocusCapture` / `onBlurCapture`)**:
+   - Only apply event listeners to the top-level parent `div[role=grid]`, allowing React `SyntheticEvent` bubbling to trace which sub-cell within the 500-cell block was interacted with.
+   - When a child `contentEditable` div triggers focus, mutate its `event.target.textContent` manually to its `engine.getRaw()` counterpart.
+   - When a child blurs, mutate its `textContent` back to the result of `engine.getValue()`. Since the engine processes upstream dependants, also ensure you map over the returned `changed` cells from `engine.setRaw()`, mutating their downstream text nodes manually too using native `document.querySelector` tools!
 
 ---
 
-### Slide 171: Google Sheet UI - Focus/Blur Handling
-
-The magic of switching between raw formula and computed value:
-
-```typescript
-const handleCellFocus = ({ target }) => {
-  const id = toCellReference(row, column)
-  target.textContent = engine.getRaw(id) // Show formula
-}
-
-const handleCellBlur = ({ target }) => {
-  const id = toCellReference(row, column)
-  const raw = target.textContent ?? ''
-  const { changed } = engine.setRaw(id, raw) // Commit change
-
-  target.textContent = engine.getValue(id) // Show result
-
-  // Update all affected cells
-  for (const changedId of changed) {
-    updateCellView(changedId)
-  }
-}
-```
-
-Notice: We use `onFocusCapture` and `onBlurCapture` for event delegation!
-
----
-
-### Slide 172: Google Sheet UI - Formatting Toolbar
-
-Format buttons toggle CSS classes without losing focus:
-
-```typescript
-<menu onMouseDownCapture={(e) => e.preventDefault()}>
-  <button data-format="bold"><strong>B</strong></button>
-  <button data-format="italic"><i>I</i></button>
-  <button data-format="strikethrough"><s>S</s></button>
-</menu>
-```
-
-```typescript
-const handleFormatting = ({ target }) => {
-  const format = target.closest('button')?.dataset.format
-  if (format && selectedCell.current) {
-    const cell = getCellElement(row, column)
-    cell.classList.toggle(css[format]) // Toggle bold/italic/strikethrough
-  }
-}
-```
-
-**Key trick**: `e.preventDefault()` on `mousedown` prevents the button from stealing focus from the cell!
-
----
-
-### Slide 173: Google Sheet UI - Step-by-Step Implementation
-
-1. **Pre-render grid structure**:
-
-   ```typescript
-   const HEADER_ROWS = <div role="row">...</div>  // Column headers A-Z
-   const BODY_ROWS = Array.from({ length: 500 }).map(...)  // Data rows
-   ```
-
-2. **Cell component** - contentEditable div with `data-column`, `data-row`
-
-3. **Formula bar** - Read-only input showing selected cell's raw formula
-
-4. **Event handlers**:
-   - `onClick` → update selected cell, sync formula bar
-   - `onFocusCapture` → show raw formula in cell
-   - `onBlurCapture` → commit change, show computed value, update dependents
-
-5. **Formatting** - Toggle CSS classes via data attributes
-
-6. **Engine integration** - Single `TableEngine` instance shared across component
-
----
-
-### Slide 174: Google Sheets - Complete Architecture
-
-Here's how all 4 parts connect:
-
-```
-User types "=A1+B1" in C1
-          │
-          ▼
-┌─────────────────────────────────────────────────────────┐
-│  Part 4: UX                                             │
-│  handleCellBlur() → engine.setRaw('C1', '=A1+B1')       │
-└─────────────────────────────────────────────────────────┘
-          │
-          ▼
-┌─────────────────────────────────────────────────────────┐
-│  Part 3: Engine                                         │
-│  setRaw() → #compile() → #setDeps() → #recomputeFrom()  │
-└─────────────────────────────────────────────────────────┘
-          │                                    │
-          ▼                                    ▼
-┌─────────────────────────────┐  ┌────────────────────────┐
-│  Part 1: Parser             │  │  Part 2: Topo Sort     │
-│  tokenize() → toRpn()       │  │  affectedFrom()        │
-│  "=A1+B1" → [A1,B1,+]       │  │  topoSort()            │
-└─────────────────────────────┘  └────────────────────────┘
-          │
-          ▼
-┌─────────────────────────────────────────────────────────┐
-│  Returns { changed: ['C1', 'D1', ...] }                 │
-│  UI updates only these cells                            │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-### Slide 175: Google Sheets - Error Handling Summary
-
-| Error     | Cause                        | Display   |
-| --------- | ---------------------------- | --------- |
-| `#ERROR`  | Parse error, invalid formula | `#ERROR`  |
-| `#DIV/0!` | Division by zero             | `#DIV/0!` |
-| `#CYCLE!` | Circular reference           | `#CYCLE!` |
-
-Error propagation is automatic - if A1 shows `#ERROR`, then any cell referencing A1 also shows `#ERROR`!
-
----
-
-### Slide 176: Google Sheets - Key Patterns Recap
+### Slide 165: Google Sheets - Key Patterns Recap
 
 This monster component taught us:
 
 1. **Parsing** - Tokenization + Shunting-Yard for expression evaluation
 2. **Graph algorithms** - BFS for finding affected nodes, Kahn's for ordering
 3. **Reactive updates** - Only recalculate what changed
-4. **Partial DOM updates** - Don't re-render the whole grid
-5. **Event delegation** - `data-*` attributes everywhere
-6. **Focus management** - `preventDefault()` to prevent focus theft
-7. **Separation of concerns** - Engine knows nothing about UI
+4. **Partial DOM updates** - Don't re-render the whole grid, manipulate static elements directly!
+5. **Event delegation** - `data-*` attributes and `SyntheticEvents` everywhere!
+6. **Separation of concerns** - The Engine knows nothing about UI
 
-If you can build this from scratch, you can build **anything**! 🏆
+If you can build this Engine from scratch natively within a browser, you can build **anything**! 🏆
 
 ---
 
-### Slide 177: Part 3 Wrap-Up
+### Slide 166: Part 3 Wrap-Up
 
-Congrats! You've now seen **21 UI components** covering a huge range of patterns:
+Congrats! You've now seen **19 UI components** covering a huge range of patterns:
 
 | Category            | Components                        |
 | ------------------- | --------------------------------- |
@@ -5029,995 +5062,11 @@ Congrats! You've now seen **21 UI components** covering a huge range of patterns
 | **Tree Structures** | Portfolio Visualizer              |
 | **File Handling**   | Upload Component                  |
 | **Streaming**       | GPT Chat                          |
-| **Full Systems**    | **Google Sheets** (21 - 4 parts!) |
+| **Full Systems**    | **Google Sheets** (19 Series!)    |
 
 ---
 
 ## Part 4: TypeScript Type Challenges
+## Part 4: TypeScript Type Challenges
+## Part 4: TypeScript Type Challenges
 
----
-
-### Slide 178: Welcome to Type-Level Programming
-
-Time for the final boss: **TypeScript Type Challenges**! These problems test your ability to write types that compute, transform, and validate at compile time.
-
-Why does this matter?
-
-- **Shows deep language mastery** - interviewers love this
-- **Practical utility** - better library types, safer APIs
-- **Brain exercise** - it's like solving puzzles, but useful!
-
-We'll cover 9 levels of increasing difficulty:
-
-| Level | Concept                   | Example                 |
-| ----- | ------------------------- | ----------------------- |
-| 1     | Basics                    | `keyof`, indexed access |
-| 2     | Mapped Types              | `{ [P in K]: T[P] }`    |
-| 3     | Conditional Types         | `T extends U ? X : Y`   |
-| 4     | Infer                     | Pattern matching        |
-| 5     | Template Literals         | String manipulation     |
-| 6     | Recursive Types           | Self-referencing        |
-| 7     | Distributive Conditionals | Union behavior          |
-| 8     | Advanced Patterns         | Key remapping           |
-| 9     | Expert Techniques         | Contravariance          |
-
----
-
-### Slide 179: Level 1 - Basics (keyof, typeof, indexed access)
-
-Let's start with the fundamentals that everything else builds on!
-
-**Problem 1.1: Tuple Length**
-
-Get the length of a tuple as a literal number:
-
-```typescript
-type Length<T extends readonly any[]> = T['length']
-
-// Tests:
-type A = Length<['a', 'b', 'c']> // 3
-type B = Length<[]> // 0
-```
-
-**Key insight**: Tuples have a literal `length` property, unlike regular arrays which have `number`.
-
----
-
-### Slide 180: Basics - First of Array & Tuple to Union
-
-**Problem 1.2: First of Array**
-
-```typescript
-type First<T extends any[]> = T extends [] ? never : T[0]
-
-// Or using infer:
-type First<T extends any[]> = T extends [infer F, ...any[]] ? F : never
-```
-
-**Problem 1.3: Tuple to Union**
-
-Convert `['a', 'b', 'c']` to `'a' | 'b' | 'c'`:
-
-```typescript
-type TupleToUnion<T extends any[]> = T[number]
-
-// T[number] means "index T with all possible number indices"
-// For tuples, this gives a union of all element types!
-```
-
-These three patterns are foundational - you'll use `T['length']`, `T[0]`, and `T[number]` constantly!
-
----
-
-### Slide 181: Level 2 - Mapped Types
-
-Mapped types let you transform object types by iterating over keys:
-
-```typescript
-{ [P in K]: NewType }
-```
-
-**Problem 2.1: Pick** - Select specific keys from a type:
-
-```typescript
-type MyPick<T, K extends keyof T> = {
-  [P in K]: T[P]
-}
-
-// Usage:
-type Result = MyPick<{ a: 1; b: 2; c: 3 }, 'a' | 'c'>
-// { a: 1, c: 3 }
-```
-
-**Problem 2.2: Readonly** - Make all properties readonly:
-
-```typescript
-type MyReadonly<T> = {
-  readonly [P in keyof T]: T[P]
-}
-```
-
----
-
-### Slide 182: Mapped Types - Modifiers and Key Manipulation
-
-**Problem 2.3: Mutable** - Remove readonly:
-
-```typescript
-type Mutable<T> = {
-  -readonly [P in keyof T]: T[P] // Note the minus!
-}
-```
-
-**Problem 2.4: Tuple to Object**
-
-```typescript
-type TupleToObject<T extends readonly PropertyKey[]> = {
-  [P in T[number]]: P
-}
-
-// Usage:
-type Result = TupleToObject<['a', 'b', 'c']>
-// { a: 'a', b: 'b', c: 'c' }
-```
-
-**Problem 2.5: Merge** - Combine two objects (second wins):
-
-```typescript
-type Merge<A, B> = {
-  [K in keyof A | keyof B]: K extends keyof B ? B[K] : K extends keyof A ? A[K] : never
-}
-```
-
----
-
-### Slide 183: Level 3 - Conditional Types
-
-The `extends` keyword is your `if` statement at the type level:
-
-```typescript
-T extends U ? TrueType : FalseType
-```
-
-**Problem 3.1: If**
-
-```typescript
-type If<C extends boolean, T, F> = C extends true ? T : F
-
-type A = If<true, 'yes', 'no'> // 'yes'
-type B = If<false, 'yes', 'no'> // 'no'
-```
-
-**Problem 3.2: Exclude** - Remove types from a union:
-
-```typescript
-type MyExclude<T, U> = T extends U ? never : T
-
-type Result = MyExclude<'a' | 'b' | 'c', 'a'> // 'b' | 'c'
-```
-
-The magic: when `T` is a union, the conditional **distributes** over each member!
-
----
-
-### Slide 184: Conditional Types - IsNever and AnyOf
-
-**Problem 3.3: IsNever** - Check if a type is `never`:
-
-```typescript
-// WRONG - this doesn't work!
-type IsNever<T> = T extends never ? true : false
-// IsNever<never> = never (not true!)
-
-// CORRECT - wrap in tuple to prevent distribution
-type IsNever<T> = [T] extends [never] ? true : false
-// IsNever<never> = true ✓
-```
-
-**Why?** When `T = never`, the conditional never executes because `never` has no members to distribute over!
-
-**Problem 3.4: AnyOf** - Check if any element is truthy:
-
-```typescript
-type Falsy = 0 | '' | false | [] | { [K: string]: never } | null | undefined
-
-type AnyOf<T extends any[]> = T[number] extends Falsy ? false : true
-```
-
----
-
-### Slide 185: Level 4 - Infer (Pattern Matching)
-
-The `infer` keyword lets you **extract** types from patterns:
-
-```typescript
-T extends Pattern<infer U> ? U : Default
-```
-
-**Problem 4.1: Return Type**
-
-```typescript
-type MyReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : never
-
-type Result = MyReturnType<() => string> // string
-```
-
-**Problem 4.2: Parameters**
-
-```typescript
-type MyParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P : never
-
-type Result = MyParameters<(a: string, b: number) => void>
-// [a: string, b: number]
-```
-
----
-
-### Slide 186: Infer - Array Manipulation
-
-**Problem 4.3: Awaited** - Unwrap Promises recursively:
-
-```typescript
-type Awaited<T> = T extends Promise<infer U> ? Awaited<U> : T
-
-type Result = Awaited<Promise<Promise<string>>> // string
-```
-
-**Problem 4.4: Last** - Get last element of tuple:
-
-```typescript
-type Last<T extends any[]> = T extends [...any[], infer L] ? L : never
-
-type Result = Last<[1, 2, 3]> // 3
-```
-
-**Problem 4.5: Pop** - Remove last element:
-
-```typescript
-type Pop<T extends any[]> = T extends [...infer Rest, any] ? Rest : never
-
-type Result = Pop<[1, 2, 3]> // [1, 2]
-```
-
-Notice the pattern: `[...infer Rest, X]` matches "everything but the last"!
-
----
-
-### Slide 187: Level 5 - Template Literal Types
-
-TypeScript can manipulate strings at the type level!
-
-```typescript
-type Greeting = `Hello, ${string}!` // Any string matching the pattern
-```
-
-**Problem 5.1: Capitalize**
-
-```typescript
-type MyCapitalize<S extends string> = S extends `${infer F}${infer R}` ? `${Uppercase<F>}${R}` : S
-
-type Result = MyCapitalize<'hello'> // 'Hello'
-```
-
-**Problem 5.2: TrimLeft**
-
-```typescript
-type TrimLeft<S extends string> = S extends ` ${infer R}` | `\n${infer R}` | `\t${infer R}`
-  ? TrimLeft<R>
-  : S
-
-type Result = TrimLeft<'   hello'> // 'hello'
-```
-
----
-
-### Slide 188: Template Literals - KebabCase
-
-**Problem 5.5: KebabCase** - Convert `FooBarBaz` to `foo-bar-baz`:
-
-```typescript
-type KebabCase<S extends string> = S extends `${infer S1}${infer S2}`
-  ? S2 extends Uncapitalize<S2>
-    ? `${Uncapitalize<S1>}${KebabCase<S2>}`
-    : `${Uncapitalize<S1>}-${KebabCase<S2>}`
-  : S
-
-// Usage:
-type Result = KebabCase<'FooBarBaz'> // 'foo-bar-baz'
-```
-
-**How it works**:
-
-1. Split into first char `S1` and rest `S2`
-2. Check if `S2` starts with lowercase (is it `Uncapitalize<S2>`?)
-3. If yes, just continue. If no, insert a `-` before the uppercase char
-4. Recurse until string is empty
-
----
-
-### Slide 189: Template Literals - String to Union & Length
-
-**Problem 5.6: String to Union**
-
-```typescript
-type StringToUnion<S extends string> = S extends `${infer C}${infer R}`
-  ? C | StringToUnion<R>
-  : never
-
-type Result = StringToUnion<'hello'> // 'h' | 'e' | 'l' | 'o'
-```
-
-**Problem 5.7: Length of String**
-
-TypeScript doesn't have `string.length` at type level, so we count by converting to tuple:
-
-```typescript
-type StringToTuple<S extends string> = S extends `${infer C}${infer R}`
-  ? [C, ...StringToTuple<R>]
-  : []
-
-type LengthOfString<S extends string> = StringToTuple<S>['length']
-
-type Result = LengthOfString<'hello'> // 5
-```
-
----
-
-### Slide 190: Level 6 - Recursive Types
-
-Types can call themselves! Just like recursive functions:
-
-**Problem 6.1: DeepReadonly**
-
-```typescript
-type DeepReadonly<T> = {
-  readonly [K in keyof T]: keyof T[K] extends never ? T[K] : DeepReadonly<T[K]>
-}
-```
-
-**How it works**:
-
-- For each property, check if it has its own keys (`keyof T[K] extends never`)
-- If no keys (primitive), keep as-is
-- If has keys (object), recurse!
-
-**Problem 6.2: Flatten** - Flatten nested arrays:
-
-```typescript
-type Flatten<T extends any[]> = T extends [infer F, ...infer R]
-  ? F extends any[]
-    ? [...Flatten<F>, ...Flatten<R>]
-    : [F, ...Flatten<R>]
-  : []
-
-type Result = Flatten<[1, [2, [3, 4]], 5]> // [1, 2, 3, 4, 5]
-```
-
----
-
-### Slide 191: Recursive Types - Reverse and Fibonacci
-
-**Problem 6.3: Reverse**
-
-```typescript
-type Reverse<T extends any[]> = T extends [infer F, ...infer R] ? [...Reverse<R>, F] : []
-
-type Result = Reverse<[1, 2, 3]> // [3, 2, 1]
-```
-
-**Problem 6.5: Fibonacci** - Type-level math!
-
-```typescript
-type Fibonacci<
-  N extends number,
-  Curr extends any[] = [1],
-  Prev extends any[] = [],
-  Count extends any[] = [1],
-> = Count['length'] extends N
-  ? Curr['length']
-  : Fibonacci<N, [...Curr, ...Prev], Curr, [...Count, 1]>
-
-type Fib10 = Fibonacci<10> // 55
-```
-
-We use tuple lengths as numbers since TypeScript doesn't have type-level arithmetic!
-
----
-
-### Slide 192: Level 7 - Distributive Conditionals
-
-When a conditional type receives a union, it **distributes**:
-
-```typescript
-type ToArray<T> = T extends any ? T[] : never
-
-type Result = ToArray<string | number>
-// = (string extends any ? string[] : never) | (number extends any ? number[] : never)
-// = string[] | number[]
-```
-
-**Problem 7.1: IsUnion** - Detect if type is a union:
-
-```typescript
-type IsUnion<T, Copy = T> = [T] extends [never]
-  ? false
-  : T extends T
-    ? [Copy] extends [T]
-      ? false
-      : true
-    : never
-
-type A = IsUnion<string | number> // true
-type B = IsUnion<string> // false
-```
-
-**How it works**: When `T` distributes, `T extends T` makes `T` a single member, but `Copy` stays as the full union. If they're different, it's a union!
-
----
-
-### Slide 193: Distributive - Permutation
-
-**Problem 7.2: Permutation** - Generate all permutations of a union:
-
-```typescript
-type Permutation<T, U = T> = [T] extends [never]
-  ? []
-  : U extends U
-    ? [U, ...Permutation<Exclude<T, U>>]
-    : never
-
-type Result = Permutation<'a' | 'b' | 'c'>
-// ['a','b','c'] | ['a','c','b'] | ['b','a','c'] | ['b','c','a'] | ['c','a','b'] | ['c','b','a']
-```
-
-**How it works**:
-
-1. `U extends U` distributes - picks one element at a time
-2. Prepend that element `[U, ...]`
-3. Recurse with remaining elements `Exclude<T, U>`
-4. Base case: when `T` is empty (never), return `[]`
-
-This is one of the trickiest type challenges!
-
----
-
-### Slide 194: Level 8 - Advanced Patterns
-
-Key remapping and type arithmetic!
-
-**Problem 8.1: PickByType** - Pick properties by their value type:
-
-```typescript
-type PickByType<T, U> = {
-  [K in keyof T as T[K] extends U ? K : never]: T[K]
-}
-
-type Result = PickByType<{ a: string; b: number; c: string }, string>
-// { a: string, c: string }
-```
-
-**Key insight**: `as` in mapped types lets you filter or transform keys!
-
-**Problem 8.2: OmitByType**
-
-```typescript
-type OmitByType<T, U> = {
-  [K in keyof T as T[K] extends U ? never : K]: T[K]
-}
-```
-
----
-
-### Slide 195: Advanced - PartialByKeys and Chunk
-
-**Problem 8.3: PartialByKeys** - Make only specific keys optional:
-
-```typescript
-type PartialByKeys<T, K extends keyof T = keyof T> = Merge<
-  { [P in K]?: T[P] },
-  { [P in Exclude<keyof T, K>]: T[P] }
->
-
-// Helper to flatten intersection
-type Merge<A, B> = {
-  [K in keyof A | keyof B]: K extends keyof B ? B[K] : K extends keyof A ? A[K] : never
-}
-```
-
-**Problem 8.4: Chunk** - Split array into chunks:
-
-```typescript
-type Chunk<T extends any[], N extends number, Acc extends any[] = []> = Acc['length'] extends N
-  ? [Acc, ...Chunk<T, N>]
-  : T extends [infer F, ...infer R]
-    ? Chunk<R, N, [...Acc, F]>
-    : Acc extends []
-      ? []
-      : [Acc]
-
-type Result = Chunk<[1, 2, 3, 4, 5], 2> // [[1,2], [3,4], [5]]
-```
-
----
-
-### Slide 196: Level 9 - Expert Techniques
-
-The final boss level! Contravariance and type tricks.
-
-**Problem 9.1: Union to Intersection**
-
-```typescript
-type UnionToIntersection<U> = (U extends any ? (arg: U) => void : never) extends (
-  arg: infer I,
-) => void
-  ? I
-  : never
-
-type Result = UnionToIntersection<{ a: 1 } | { b: 2 }>
-// { a: 1 } & { b: 2 }
-```
-
-**How it works**: Function parameters are **contravariant**. When we put unions in parameter position and then infer, TypeScript intersects them!
-
-**Problem 9.2: IsAny** - Detect the `any` type:
-
-```typescript
-type IsAny<T> = 0 extends 1 & T ? true : false
-
-// Why it works:
-// 1 & any = any
-// 0 extends any = true
-// But for any other T, 1 & T is still 1, and 0 !extends 1
-```
-
----
-
-### Slide 197: Expert - Greater Than
-
-**Problem 9.3: GreaterThan** - Compare numbers at type level:
-
-```typescript
-type GreaterThan<
-  A extends number,
-  B extends number,
-  Arr extends any[] = [],
-> = Arr['length'] extends A
-  ? false
-  : Arr['length'] extends B
-    ? true
-    : GreaterThan<A, B, [...Arr, 0]>
-
-type Result = GreaterThan<5, 3> // true
-```
-
-**How it works**: Count up from 0. Whoever you hit first is smaller!
-
----
-
-### Slide 198: TypeScript Challenges - Cheat Sheet
-
-Here are the essential patterns to memorize:
-
-```typescript
-// Check for never
-[T] extends [never] ? true : false
-
-// Check for any
-0 extends (1 & T) ? true : false
-
-// Prevent union distribution
-[T] extends [U] ? ... : ...
-
-// Union to intersection (contravariance)
-(U extends any ? (arg: U) => any : never) extends (arg: infer I) => void ? I : never
-
-// Count via tuple length
-type Count<N, Acc extends any[] = []> =
-  Acc['length'] extends N ? Acc : Count<N, [...Acc, any]>
-
-// Iterate array
-T extends [infer F, ...infer R] ? [Process<F>, ...Iterate<R>] : []
-
-// Iterate string
-S extends `${infer C}${infer R}` ? [C, ...Iterate<R>] : []
-```
-
----
-
-### Slide 199: Part 4 Wrap-Up
-
-You've conquered the TypeScript Type System! Here's what you've learned:
-
-| Level | Key Concept       | Essential Pattern            |
-| ----- | ----------------- | ---------------------------- |
-| 1     | Basics            | `T['length']`, `T[number]`   |
-| 2     | Mapped Types      | `{ [P in K]: T[P] }`         |
-| 3     | Conditionals      | `T extends U ? X : Y`        |
-| 4     | Infer             | `infer R` pattern matching   |
-| 5     | Template Literals | `` `${infer C}${infer R}` `` |
-| 6     | Recursion         | Self-referencing types       |
-| 7     | Distributive      | Union distribution           |
-| 8     | Advanced          | `as` key remapping           |
-| 9     | Expert            | Contravariance tricks        |
-
-**Pro tip**: Practice these on [Type Challenges](https://github.com/type-challenges/type-challenges)!
-
----
-
-### Slide 200: Final Thoughts
-
-You've completed the Frontend Interview Preparation Workshop! Here's what to remember:
-
-1. **Practice the patterns, not just the problems** - the same patterns appear in different forms
-2. **Start with native elements** - `<details>`, `<dialog>`, semantic HTML do a lot for free
-3. **Event delegation is your friend** - `data-*` attributes + `closest()` everywhere
-4. **Partial updates > full re-renders** - update only what changed
-5. **Accessibility isn't optional** - ARIA roles, keyboard support, screen reader testing
-
-**The problems here are slightly harder than real interviews** - that's intentional. If you can build these, you'll crush the actual interviews!
-
-Good luck! 🚀
-
----
-
-## Appendix A: Event Delegation Deep Dive
-
-### What is Event Delegation?
-
-Event delegation is a pattern where you attach a **single event listener to a parent element** instead of multiple listeners on individual children. It leverages **event bubbling** - events travel up the DOM tree from the target to the document root.
-
-```mermaid
-graph TB
-    subgraph "Event Bubbling"
-        DOC["document"]
-        BODY["body"]
-        UL["ul.menu"]
-        LI1["li (clicked)"]
-        LI2["li"]
-        LI3["li"]
-    end
-
-    LI1 -->|"1. captures"| UL
-    UL -->|"2. bubbles"| BODY
-    BODY -->|"3. bubbles"| DOC
-```
-
-### Why Use Event Delegation?
-
-| Benefit                 | Explanation                           |
-| ----------------------- | ------------------------------------- |
-| **Memory Efficient**    | 1 listener vs N listeners             |
-| **Dynamic Content**     | Works for elements added later        |
-| **Cleaner Code**        | One handler, one location             |
-| **Pattern Consistency** | Use `data-*` + `closest()` everywhere |
-
-### The Pattern
-
-```typescript
-// Instead of this (BAD):
-document.querySelectorAll('.button').forEach((btn) => {
-  btn.addEventListener('click', handleClick)
-})
-
-// Do this (GOOD):
-document.querySelector('.container').addEventListener('click', (e) => {
-  const button = e.target.closest('[data-action]')
-  if (!button) return
-
-  const action = button.dataset.action
-  // Handle based on action
-})
-```
-
-### Key Methods
-
-| Method              | Purpose                        | Example                         |
-| ------------------- | ------------------------------ | ------------------------------- |
-| `e.target`          | Element that triggered event   | The clicked button              |
-| `e.currentTarget`   | Element with listener attached | The container                   |
-| `closest(selector)` | Find nearest matching ancestor | `e.target.closest('[data-id]')` |
-| `matches(selector)` | Check if element matches       | `e.target.matches('.button')`   |
-
-### Event Propagation Control
-
-```typescript
-e.stopPropagation() // Stop bubbling up
-e.preventDefault() // Prevent default behavior (form submit, link navigation)
-e.stopImmediatePropagation() // Stop other listeners on same element
-```
-
-### Common Pitfalls
-
-1. **Forgetting `closest()`** - `e.target` might be a child element (e.g., icon inside button)
-2. **Not checking for null** - `closest()` returns null if no match
-3. **Event types that don't bubble** - `focus`, `blur`, `scroll` don't bubble (use `focusin`, `focusout`, or capture phase)
-
----
-
-## Appendix B: TypeScript Type System Theory
-
-### The Type Hierarchy
-
-```mermaid
-graph TB
-    unknown["unknown<br/>(top type)"]
-    any["any<br/>(escape hatch)"]
-
-    unknown --> string
-    unknown --> number
-    unknown --> boolean
-    unknown --> object
-    unknown --> symbol
-    unknown --> null
-    unknown --> undefined
-
-    object --> Array
-    object --> Function
-    object --> Date
-
-    string --> never
-    number --> never
-    boolean --> never
-    null --> never
-    undefined --> never
-    Array --> never
-    Function --> never
-    Date --> never
-
-    never["never<br/>(bottom type)"]
-```
-
-### Key Concepts
-
-#### 1. Structural Typing (Duck Typing)
-
-TypeScript uses **structural typing** - types are compatible if they have the same shape:
-
-```typescript
-interface Point {
-  x: number
-  y: number
-}
-interface Coordinate {
-  x: number
-  y: number
-}
-
-const p: Point = { x: 1, y: 2 }
-const c: Coordinate = p // ✅ Works! Same structure
-```
-
-#### 2. Type Narrowing
-
-TypeScript narrows types based on control flow:
-
-```typescript
-function process(x: string | number) {
-  if (typeof x === 'string') {
-    x.toUpperCase() // x is string here
-  } else {
-    x.toFixed(2) // x is number here
-  }
-}
-```
-
-Narrowing methods:
-
-- `typeof` - primitive types
-- `instanceof` - class instances
-- `in` - property existence
-- `Array.isArray()` - arrays
-- Type predicates - `x is Type`
-
-#### 3. Variance
-
-| Position           | Variance      | Meaning                       |
-| ------------------ | ------------- | ----------------------------- |
-| Return type        | Covariant     | Can return more specific type |
-| Parameter          | Contravariant | Can accept more general type  |
-| Property (mutable) | Invariant     | Must match exactly            |
-
-```typescript
-// Covariance (return position)
-type Animal = { name: string }
-type Dog = Animal & { breed: string }
-
-const getDog: () => Dog = () => ({ name: 'Rex', breed: 'Shepherd' })
-const getAnimal: () => Animal = getDog // ✅ OK - Dog is more specific
-
-// Contravariance (parameter position)
-const handleAnimal: (a: Animal) => void = (a) => console.log(a.name)
-const handleDog: (d: Dog) => void = handleAnimal // ✅ OK - Animal is more general
-```
-
-#### 4. Distributive Conditional Types
-
-When a conditional type receives a **union**, it distributes:
-
-```typescript
-type ToArray<T> = T extends any ? T[] : never
-
-type Result = ToArray<string | number>
-// Distributes to: (string extends any ? string[] : never) | (number extends any ? number[] : never)
-// = string[] | number[]
-```
-
-To **prevent** distribution, wrap in tuple:
-
-```typescript
-type ToArrayNonDist<T> = [T] extends [any] ? T[] : never
-
-type Result = ToArrayNonDist<string | number>
-// = (string | number)[]  // NOT distributed
-```
-
-#### 5. The `infer` Keyword
-
-`infer` extracts types from patterns:
-
-```typescript
-// Extract return type
-type ReturnType<T> = T extends (...args: any) => infer R ? R : never
-
-// Extract array element
-type ElementType<T> = T extends (infer E)[] ? E : never
-
-// Extract Promise value
-type Awaited<T> = T extends Promise<infer U> ? Awaited<U> : T
-```
-
-### TypeScript Compiler Flags to Know
-
-| Flag                         | Purpose                                   |
-| ---------------------------- | ----------------------------------------- |
-| `strict`                     | Enables all strict checks                 |
-| `noImplicitAny`              | Error on implicit `any`                   |
-| `strictNullChecks`           | `null` and `undefined` are not assignable |
-| `noUncheckedIndexedAccess`   | Array/object access may be undefined      |
-| `exactOptionalPropertyTypes` | Distinguish `undefined` from missing      |
-
----
-
-## Appendix C: Useful Resources
-
-### JavaScript & DOM
-
-| Resource          | Link                                                |
-| ----------------- | --------------------------------------------------- |
-| MDN Web Docs      | https://developer.mozilla.org                       |
-| JavaScript.info   | https://javascript.info                             |
-| DOM Enlightenment | http://domenlightenment.com                         |
-| Event Reference   | https://developer.mozilla.org/en-US/docs/Web/Events |
-
-### TypeScript
-
-| Resource              | Link                                               |
-| --------------------- | -------------------------------------------------- |
-| TypeScript Handbook   | https://www.typescriptlang.org/docs/handbook       |
-| Type Challenges       | https://github.com/type-challenges/type-challenges |
-| TypeScript Playground | https://www.typescriptlang.org/play                |
-| Total TypeScript      | https://www.totaltypescript.com                    |
-
-### React
-
-| Resource         | Link                      |
-| ---------------- | ------------------------- |
-| React Docs (new) | https://react.dev         |
-| React Patterns   | https://reactpatterns.com |
-| useHooks         | https://usehooks.com      |
-
-### CSS & Accessibility
-
-| Resource                 | Link                            |
-| ------------------------ | ------------------------------- |
-| CSS Tricks               | https://css-tricks.com          |
-| A11y Project             | https://www.a11yproject.com     |
-| ARIA Authoring Practices | https://www.w3.org/WAI/ARIA/apg |
-
-### Interview Prep
-
-| Resource                    | Link                                       |
-| --------------------------- | ------------------------------------------ |
-| Frontend Interview Handbook | https://www.frontendinterviewhandbook.com  |
-| BFE.dev                     | https://bigfrontend.dev                    |
-| LeetCode JS Problems        | https://leetcode.com/problemset/javascript |
-
-### System Design
-
-| Resource                            | Link                                                |
-| ----------------------------------- | --------------------------------------------------- |
-| Frontend Masters (Evgenii's Course) | https://frontendmasters.com                         |
-| System Design Primer                | https://github.com/donnemartin/system-design-primer |
-
----
-
-## Appendix D: Quick Reference Cheat Sheets
-
-### DOM API Quick Reference
-
-```typescript
-// Selection
-document.querySelector(selector) // First match
-document.querySelectorAll(selector) // All matches
-element.closest(selector) // Nearest ancestor
-element.matches(selector) // Test match
-
-// Traversal
-element.parentElement // Parent
-element.children // Direct children
-element.nextElementSibling // Next sibling
-element.previousElementSibling // Previous sibling
-
-// Manipulation
-element.innerHTML = html // Set HTML content
-element.textContent = text // Set text (safer)
-element.insertAdjacentHTML(pos, html) // Insert relative
-element.remove() // Remove from DOM
-
-// Attributes
-element.getAttribute(name)
-element.setAttribute(name, value)
-element.dataset.myValue // data-my-value attribute
-
-// Classes
-element.classList.add('class')
-element.classList.remove('class')
-element.classList.toggle('class')
-element.classList.contains('class')
-
-// Styles
-element.style.property = value // Inline style
-getComputedStyle(element) // Computed style
-```
-
-### React Hooks Quick Reference
-
-```typescript
-// State
-const [state, setState] = useState(initial)
-const [state, dispatch] = useReducer(reducer, initial)
-
-// Effects
-useEffect(() => {
-  /* effect */ return () => {
-    /* cleanup */
-  }
-}, [deps])
-useLayoutEffect(() => {
-  /* sync effect */
-}, [deps])
-
-// Refs
-const ref = useRef(initial)
-const callback = useCallback(fn, [deps])
-const value = useMemo(() => compute(), [deps])
-
-// Context
-const value = useContext(MyContext)
-
-// Performance
-const deferredValue = useDeferredValue(value)
-const [isPending, startTransition] = useTransition()
-```
-
-### CSS Layout Quick Reference
-
-```css
-/* Flexbox */
-display: flex;
-flex-direction: row | column;
-justify-content: flex-start | center | space-between;
-align-items: flex-start | center | stretch;
-gap: 8px;
-
-/* Grid */
-display: grid;
-grid-template-columns: repeat(3, 1fr);
-grid-template-rows: auto;
-gap: 16px;
-place-items: center;
-
-/* Positioning */
-position: relative | absolute | fixed | sticky;
-inset: 0; /* top: 0; right: 0; bottom: 0; left: 0; */
-```
