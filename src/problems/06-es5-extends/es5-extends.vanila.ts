@@ -11,3 +11,20 @@ export const myExtends = (SuperType: Function, SubType: Function) => {
 
   throw new Error('Not implemented')
 }
+
+// --- Examples ---
+// Uncomment to test your implementation:
+
+// function Animal(this: any, name: string) { this.name = name }
+// Animal.prototype.greet = function () { return `Hello, ${this.name}` }
+//
+// function Dog(this: any, _name: string) { this.breed = 'Labrador' }
+// Dog.prototype.bark = function () { return `${this.name} says Woof!` }
+//
+// const DogExtended = myExtends(Animal, Dog)
+// const dog = new (DogExtended as any)('Rex')
+// console.log(dog.name)    // Expected: "Rex"
+// console.log(dog.breed)   // Expected: "Labrador"
+// console.log(dog.greet()) // Expected: "Hello, Rex"
+// console.log(dog.bark())  // Expected: "Rex says Woof!"
+// console.log(dog instanceof Animal) // Expected: true

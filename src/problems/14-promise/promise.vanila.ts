@@ -29,3 +29,18 @@ export class MyPromise {
     throw new Error('Not implemented')
   }
 }
+
+// --- Examples ---
+// Uncomment to test your implementation:
+
+// const p1 = new MyPromise((resolve: any) => resolve(42))
+// p1.then((v: any) => console.log(v))  // Expected: 42
+//
+// const p2 = new MyPromise((resolve: any) => resolve(1))
+//   .then((v: any) => v + 1)
+//   .then((v: any) => console.log(v))   // Expected: 2
+//
+// const p3 = new MyPromise((_: any, reject: any) => reject('error'))
+// p3.catch((e: any) => console.log(e))  // Expected: "error"
+//
+// MyPromise.resolve(99).then((v: any) => console.log(v))  // Expected: 99

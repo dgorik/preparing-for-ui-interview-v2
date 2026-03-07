@@ -25,3 +25,17 @@ import { detectType } from '@course/utils'
 export const stringify = () => {
   throw new Error('Not implemented')
 }
+
+// --- Examples ---
+// Uncomment to test your implementation:
+
+// console.log(stringify(null))              // Expected: null
+// console.log(stringify(42))                // Expected: 42
+// console.log(stringify(true))              // Expected: true
+// console.log(stringify('hello'))           // Expected: "hello"
+// console.log(stringify([1, 'a', true]))    // Expected: [1,"a",true]
+// console.log(stringify({ a: 1, b: 'x' })) // Expected: { a: 1, b: "x" }
+// console.log(stringify(new Date()))        // Expected: 3/7/2026, 8:15:00 PM (toLocaleString)
+// console.log(stringify(/abc/gi))           // Expected: /abc/gi
+// const circular: any = { a: 1 }; circular.self = circular
+// console.log(stringify(circular))          // Expected: { a: 1, self: [Circular] }

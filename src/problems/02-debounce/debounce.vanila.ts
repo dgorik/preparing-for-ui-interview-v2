@@ -3,3 +3,11 @@
 export function debounce(fn: Function, delay: number) {
   throw new Error('Not implemented')
 }
+
+// --- Examples ---
+// Uncomment to test your implementation:
+
+// const log = debounce((msg: string) => console.log(msg), 300)
+// log('a')  // cancelled by next call
+// log('b')  // cancelled by next call
+// log('c')  // only this one fires after 300ms → "c"

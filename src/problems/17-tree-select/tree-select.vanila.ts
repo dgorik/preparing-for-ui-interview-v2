@@ -11,9 +11,7 @@ class TreeNode {
   children: TreeNode[] = []
   status: TSelectStatus = NOT_SELECTED
 
-  constructor(
-    public name: string,
-  ) {}
+  constructor(public name: string) {}
 
   toString(level: number = -1): string {
     const dots = Math.max(0, level)
