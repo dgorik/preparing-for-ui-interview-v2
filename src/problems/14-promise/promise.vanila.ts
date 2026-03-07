@@ -1,5 +1,11 @@
 // bun test src/problems/14-promise/test/promise.test.ts
 
+type PromiseStatus = 'pending' | 'fulfilled' | 'rejected'
+
+const PENDING: PromiseStatus = 'pending'
+const FULFILLED: PromiseStatus = 'fulfilled'
+const REJECTED: PromiseStatus = 'rejected'
+
 // Step 0: Define types and constants
 // Step 1: Define class fields
 // Step 2: Implement settle, resolve, reject
@@ -8,6 +14,8 @@
 // Step 5: Implement then<R>
 // Step 6: Implement catch, static resolve, static reject
 export class MyPromise {
+  constructor(executor: any) {}
+
   then() {
     throw new Error('Not implemented')
   }
