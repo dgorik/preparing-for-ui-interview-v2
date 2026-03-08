@@ -1,6 +1,6 @@
 // bun test src/problems/13-stringify/test/stringify.test.ts
 
-import { detectType } from '@course/utils'
+import {detectType} from '@course/utils'
 
 /**
  * Converts a value to its string representation.
@@ -22,8 +22,25 @@ import { detectType } from '@course/utils'
  * - circular:  (ref to self)    → '[Circular]'
  * - other:     unknown type     → '"Unsupported Type"'
  */
-export const stringify = () => {
-  throw new Error('Not implemented')
+export const stringify = (a: any) => {
+    const type = detectType(a);
+    switch (type) {
+        case 'null':
+        case 'number':
+        case 'bigint':
+        case 'boolean':
+        case 'symbol':
+        case 'undefined':
+        case 'string':
+        case 'object':
+        case 'map':
+        case 'array':
+        case 'set':
+        case 'date':
+        case 'regexp':
+        default:
+            return '"Unsupported Type"'
+    }
 }
 
 // --- Examples ---
