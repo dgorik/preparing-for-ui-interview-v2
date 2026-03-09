@@ -1,12 +1,31 @@
 /* Container for the star rating */
 .container {}
 
-/* Base star button style: size, cursor, background, border, transition, opacity, text outline */
-.star {}
+/* Base star style (provided) */
+.star {
+  cursor: pointer;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  border: none;
+  transition: opacity 0.2s ease-in-out;
+  opacity: 1;
+  -webkit-text-stroke: 1px black;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+}
 
-/* Disabled/Readonly state: default cursor, no pointer events */
+/* Disabled/Readonly state (provided) */
 .star:disabled,
-.star[aria-readonly='true'] {}
+.star[aria-readonly='true'] {
+  cursor: default;
+  pointer-events: none;
+}
 
-/* Dimmed state for inactive stars: reduced opacity */
-.star[data-active='false'] {}
+/* Dimmed state for inactive stars (provided) */
+.star[data-active='false'] {
+  opacity: 0.2;
+}
