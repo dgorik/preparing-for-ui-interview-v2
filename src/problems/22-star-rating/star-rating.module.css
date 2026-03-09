@@ -10,17 +10,16 @@
   border: none;
   transition: opacity 0.2s ease-in-out;
   opacity: 1;
-  -webkit-text-stroke: 1px black;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
 }
 
 /* Disabled/Readonly state (provided) */
 .star:disabled,
-.star[aria-readonly='true'] {}
+.star[aria-readonly='true'] {
+  user-select: none;
+  pointer-events: none;
+}
 
 /* Dimmed state for inactive stars (provided) */
-.star[data-active='false'] {}
+.star[data-checked='false'] {
+  opacity: 0.4;
+}
