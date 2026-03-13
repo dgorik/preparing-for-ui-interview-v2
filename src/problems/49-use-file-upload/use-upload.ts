@@ -28,6 +28,11 @@ const DEFAULT_STATE: TUploadState = {
 }
 
 const UPLOAD_API_URL = 'http://localhost:3000/api/upload'
+const DEFAULT_METRICS = {
+  lastLoaded: 0,
+  lastTime: 0,
+  offset: 0,
+}
 
 /**
  * Expected usage:

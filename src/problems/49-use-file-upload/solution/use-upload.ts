@@ -52,152 +52,134 @@ const DEFAULT_STATE: TUploadState = {
 }
 
 const UPLOAD_API_URL = 'http://localhost:3000/api/upload'
+const DEFAULT_METRICS = {
+  lastLoaded: 0,
+  lastTime: 0,
+  offset: 0,
+}
 
 /**
- * A custom hook to manage the state and logic of a chunked file upload over XMLHttpRequest.
- * Abstracts away the XMLHttpRequest internals and provides a clean React-friendly API.
- *
- * @returns A tuple containing `[state, controls]`.
+ * Expected usage:
+ * const [state, controls] = useFileUpload()
+ * controls.start(file)       // begin upload
+ * controls.pause()           // pause (aborts XHR, keeps offset)
+ * controls.resume(file)      // resume from last offset
+ * controls.cancel()          // hard abort + reset to idle
+ * state = { status, progress, speed, bytes, remainingTimeMs, error }
  */
+
 export function useFileUpload(): [TUploadState, TUploadControls] {
-  // Public-facing state of the upload.
+  // Step 1: State & Refs — single metricsRef merges lastLoaded, lastTime, and offset
+  // No useCallback/useMemo needed — hook is used once per component
   const [state, setState] = useState<TUploadState>(DEFAULT_STATE)
-
-  // Track the active request to allow aborting it dynamically when paused/cancelled.
   const xhrRef = useRef<XMLHttpRequest | null>(null)
+  const metricsRef = useRef<{
+    lastLoaded: number
+    lastTime: number
+    offset: number
+  }>({
+    ...DEFAULT_METRICS,
+  })
 
-  // Track metrics for speed calculation. Records the absolute timestamp and loaded bytes
-  // whenever we recalculate speed to figure out the delta over time.
-  const metricsRef = useRef({ lastLoaded: 0, lastTime: 0 })
-
-  // Track current successfully uploaded offset so we can `slice()` correctly when resuming.
-  const offsetRef = useRef(0)
-
-  // Helper to silently kill active requests without firing error events back to state.
-  const cleanup = useCallback(() => {
-    if (xhrRef.current) {
-      xhrRef.current.abort()
-      xhrRef.current = null
+  // Step 2: Cleanup helper — abort active XHR, reset metrics, null out ref
+  const cleanup = () => {
+    xhrRef.current?.abort()
+    metricsRef.current = {
+      ...DEFAULT_METRICS,
     }
-  }, [])
+    xhrRef.current = null
+  }
 
-  const start = useCallback(
-    (file: File, from: number = 0) => {
-      cleanup()
-
-      offsetRef.current = from
-      metricsRef.current = { lastLoaded: from, lastTime: Date.now() }
-
-      setState({
-        ...DEFAULT_STATE,
+  // Step 3: start(file, from=0) — cleanup, create XHR, track progress, send sliced file
+  //   - onprogress: compute speed (bytes/ms → KB/s), progress as (from+loaded)/(from+total)*100
+  //   - onload: set completed or error based on status code
+  //   - onerror: set error state for network failures
+  const start = (file: File, from: number = 0) => {
+    cleanup()
+    metricsRef.current.offset += from
+    xhrRef.current = new XMLHttpRequest()
+    xhrRef.current.upload.onprogress = ({ loaded, total }: ProgressEvent) => {
+      const now = Date.now()
+      const delta = now - metricsRef.current.lastTime
+      const bytesSinceLast = loaded - metricsRef.current.lastLoaded
+      const bytesInMs = bytesSinceLast / delta
+      const speed = (bytesInMs / 1024) * 1000
+      metricsRef.current.lastTime = now
+      metricsRef.current.lastLoaded = loaded
+      metricsRef.current.offset = loaded
+      setState((state) => ({
+        ...state,
         status: 'uploading',
-        progress: file.size > 0 ? (from / file.size) * 100 : 0,
-        bytes: from,
-      })
+        progress: Math.round(((from + loaded) / (from + total)) * 100),
+        speed,
+        bytes: loaded,
+        remainingTimeMs: (total - loaded) / bytesInMs,
+      }))
+    }
 
-      const xhr = new XMLHttpRequest()
-      xhrRef.current = xhr
-
-      // Handle normal progression of the upload
-      xhr.upload.onprogress = (e) => {
-        if (!e.lengthComputable) return
-
-        const totalLoaded = from + e.loaded
-        offsetRef.current = totalLoaded
-
-        const now = Date.now()
-        const timeDiffMs = now - metricsRef.current.lastTime
-
-        setState((prev) => {
-          let speed = prev.speed
-
-          // Update speed every 500ms to avoid UI jitter (throttling metrics)
-          if (timeDiffMs >= 500) {
-            const loadedDiff = totalLoaded - metricsRef.current.lastLoaded
-            speed = loadedDiff / 1024 / (timeDiffMs / 1000) // KB/s
-            metricsRef.current = { lastLoaded: totalLoaded, lastTime: now }
-          }
-
-          const progress = file.size > 0 ? Math.min(100, (totalLoaded / file.size) * 100) : 0
-
-          let remainingTimeMs = null
-          if (speed > 0) {
-            const remainingKB = (file.size - totalLoaded) / 1024
-            remainingTimeMs = (remainingKB / speed) * 1000
-          }
-
-          return {
-            ...prev,
-            status: 'uploading',
-            progress,
-            speed,
-            bytes: totalLoaded,
-            remainingTimeMs,
-          }
-        })
-      }
-
-      // Handle completion logic
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          offsetRef.current = file.size
-          setState((prev) => ({
-            ...prev,
-            status: 'completed',
-            progress: 100,
-            speed: 0,
-            bytes: file.size,
-            remainingTimeMs: 0,
-          }))
-        } else {
-          setState((prev) => ({
-            ...prev,
-            status: 'error',
-            error: 'Upload failed',
-            remainingTimeMs: null,
-          }))
-        }
-      }
-
-      // Handle network errors (offline, CORS, blocked)
-      xhr.onerror = () =>
-        setState((prev) => ({
-          ...prev,
-          status: 'error',
-          error: 'Network error',
-          remainingTimeMs: null,
+    xhrRef.current.onload = () => {
+      const status = xhrRef!.current!.status
+      if (status >= 200 && status < 300) {
+        setState((s) => ({
+          ...s,
+          progress: 100,
+          status: 'completed',
+          error: null,
+          remainingTimeMs: 0,
         }))
+      } else {
+        setState((s) => ({
+          ...s,
+          progress: 100,
+          status: 'error',
+          error: 'Upload failed',
+          remainingTimeMs: 0,
+        }))
+      }
+    }
+    xhrRef.current.onerror = () =>
+      setState((prev) => ({
+        ...prev,
+        status: 'error',
+        error: 'Network error',
+        remainingTimeMs: null,
+      }))
 
-      // Execute Request
-      xhr.open('POST', UPLOAD_API_URL)
-      xhr.setRequestHeader('X-File-Name', file.name)
-      xhr.send(file.slice(from))
-    },
-    [cleanup],
-  )
+    xhrRef.current.open('POST', UPLOAD_API_URL)
+    xhrRef.current.setRequestHeader('X-File-Name', file.name)
+    xhrRef.current.send(file.slice(from))
+    metricsRef.current.lastTime = Date.now()
+    setState((state) => ({
+      ...state,
+      status: 'uploading',
+    }))
+  }
 
-  const pause = useCallback(() => {
+  // Step 4: pause — save offset before cleanup (cleanup resets it), then set status 'paused'
+  const pause = () => {
+    const offset = metricsRef.current.offset
     cleanup()
-    setState((prev) => ({ ...prev, status: 'paused', speed: 0, remainingTimeMs: null }))
-  }, [cleanup])
+    metricsRef.current.offset = offset
+    setState((state) => ({
+      ...state,
+      status: 'paused',
+    }))
+  }
 
-  const resume = useCallback(
-    (file: File) => {
-      start(file, offsetRef.current)
-    },
-    [start],
-  )
+  // Step 5: resume — restart from saved offset
+  const resume = (file: File) => {
+    start(file, metricsRef.current.offset)
+  }
 
-  const cancel = useCallback(() => {
+  // Step 6: cancel — cleanup and reset state to cancelled
+  const cancel = () => {
     cleanup()
-    offsetRef.current = 0
-    setState(DEFAULT_STATE)
-  }, [cleanup])
+    setState({
+      ...DEFAULT_STATE,
+      status: 'cancelled',
+    })
+  }
 
-  const controls = useMemo<TUploadControls>(
-    () => ({ start, pause, resume, cancel }),
-    [start, pause, resume, cancel],
-  )
-
-  return [state, controls]
+  // Step 7: Return [state, controls] — no useMemo needed for single-use hook
+  return [state, { start, pause, resume, cancel }]
 }

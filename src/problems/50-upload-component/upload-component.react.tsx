@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
-import css from './upload-component.module.css'
+import {useState} from 'react'
 import flex from '@course/styles'
 import cx from '@course/cx'
-import { useFileUpload } from '../49-use-file-upload/use-upload'
+import {useFileUpload} from '../49-use-file-upload/use-upload'
+import {ProgressBar} from '../46-progress-bar/progress-bar.react.tsx'
 
 /**
  * Expected behavior:
@@ -14,16 +14,16 @@ import { useFileUpload } from '../49-use-file-upload/use-upload'
  */
 
 export const UploadComponent = () => {
-  // Step 1: Hook & State — useFileUpload() for [uploadState, uploadControls] + useState<File|null> + fileInputRef
-  // Step 2: Handlers:
-  //   - handleFileChange: get file from input, setFile, call uploadControls.start(file)
-  //   - handleCancel: uploadControls.cancel(), setFile(null), reset input value
-  //   - handleResume: uploadControls.resume(file) if file exists
-  // Step 3: Format helpers — formatSpeed(KB/s → "X KB/s" or "X MB/s"), formatTime(ms → "Xs left" or "Xm Ys left")
-  // Step 4: Render:
-  //   - Hidden <input type="file"> with ref
-  //   - If no file: "Select File" button that clicks the input
-  //   - If file selected: file name, speed/status display, ProgressBar component, error display
-  //   - Conditional buttons: Pause (uploading), Resume (paused), Cancel (not completed), Upload Another (completed)
-  return <div>TODO: Implement</div>
+    // Step 1: Hook & State — useFileUpload() for [uploadState, uploadControls] + useState<File|null> + fileInputRef
+
+    // Step 2: Handlers:
+    //   - handleFileChange: get file from input, setFile
+    //   - Start/Pause/Resume/Cancel triggered directly via controls in JSX
+
+    // Step 3: Render:
+    //   - <input type="file"> for file selection
+    //   - If not idle: show ProgressBar, speed, remaining time, uploaded bytes
+    //   - Buttons: Upload (idle), Pause (uploading), Resume (paused), Cancel/Reset (not idle)
+
+    return <div>TODO: Implement</div>
 }
