@@ -6,8 +6,8 @@
 
 - Regex-based text transformation pipeline
 - Rule/Pattern architecture for extensible parsing
-- Handling nested and mixed formatting (bold + italic + strikethrough)
-- Table, list, code block, and image parsing
+- Handling bold, italic, and strikethrough formatting
+- Table and list parsing with function replacers
 - Live preview with `dangerouslySetInnerHTML`
 
 ## Goal
@@ -24,10 +24,6 @@ Build a Markdown-to-HTML parser and a live preview editor. The parser converts a
 │  - Item 1           │  • Item 1            │
 │  - Item 2           │  • Item 2            │
 │                     │                      │
-│  ```js              │  ┌────────────────┐  │
-│  const x = 1        │  │ const x = 1    │  │
-│  ```                │  └────────────────┘  │
-│                     │                      │
 │  [Textarea]         │  [Live Preview]      │
 └─────────────────────┴─────────────────────┘
 ````
@@ -43,13 +39,9 @@ Build a Markdown-to-HTML parser and a live preview editor. The parser converts a
 | `**bold**`          | `<b>bold</b>`                 | `**text**` → `<b>text</b>`        |
 | `*italic*`          | `<i>italic</i>`               | `*text*` → `<i>text</i>`          |
 | `~~strike~~`        | `<s>strike</s>`               | `~~text~~` → `<s>text</s>`        |
-| `***bold italic***` | `<b><i>text</i></b>`          | Combined formatting               |
-| `` `code` ``        | `<code>code</code>`           | Inline code                       |
-| ` ```lang ... ``` ` | `<pre><code>...</code></pre>` | Code blocks                       |
 | `- item`            | `<ul><li>item</li></ul>`      | Unordered lists                   |
 | `1. item`           | `<ol><li>item</li></ol>`      | Ordered lists                     |
 | `[text](url)`       | `<a href="url">text</a>`      | Links                             |
-| `![alt](src)`       | `<img src="src" alt="alt">`   | Images                            |
 | `\| table \|`       | `<table>...</table>`          | Pipe-delimited tables             |
 | Plain text          | `<p>text</p>`                 | Paragraphs                        |
 
@@ -64,19 +56,13 @@ Input Markdown
 ┌──────────────────────────────────────────────┐
 │  Rule Pipeline (applied in order)            │
 │                                              │
-│  1. CODE_BLOCK_RULE   (``` ... ```)          │
-│  2. IMAGE_RULE        (![alt](src))          │
-│  3. LINK_RULE         ([text](url))          │
-│  4. HEADER_RULE       (# ## ### ...)         │
-│  5. TABLE_RULE        (| ... | ... |)        │
-│  6. LIST_RULE         (- item, 1. item)      │
-│  7. MIXED_TEXT_RULE   (***~~text~~***)        │
-│  8. PARAGRAPH_RULE    (plain text → <p>)     │
-│  9. BOLD_RULE         (**text**)             │
-│  10. ITALIC_RULE      (*text*)               │
-│  11. STRIKETHROUGH_RULE (~~text~~)           │
-│  12. INLINE_CODE_RULE (`code`)               │
-│  13. HORIZONTAL_RULE  (---)                  │
+│  1. LINK_RULE         ([text](url))          │
+│  2. HEADER_RULE       (# ## ### ...)         │
+│  3. TABLE_RULE        (| ... | ... |)        │
+│  4. LIST_RULE         (- item, 1. item)      │
+│  5. PARAGRAPH_RULE    (plain text → <p>)     │
+│  6. FORMATTING_RULE   (**bold**, *italic*,    │
+│                        ~~strike~~)           │
 │                                              │
 └──────────────────────────────────────────────┘
   │
@@ -84,7 +70,7 @@ Input Markdown
 Output HTML
 ````
 
-> **Order matters!** Code blocks must be processed first (to protect their content from other rules). Mixed formatting (bold+italic+strike) must come before individual bold/italic rules. Paragraphs must come before inline formatting.
+> **Order matters!** Links must be processed before formatting (to avoid `**[text](url)**` breaking). Headers and block-level elements (tables, lists) must come before paragraphs. Paragraphs must come before inline formatting so bold/italic are applied inside `<p>` tags.
 
 ### Core Classes
 
@@ -118,12 +104,14 @@ A `TRichTextRule` groups related patterns (e.g., all header patterns: h1–h6). 
 
 ### Step 3 — Define rules in order
 
-Start with the simplest rules (headers, bold, italic) and work up to complex ones (tables, lists, code blocks). Key ordering principles:
+Define 6 rules using the pre-initialised regex constants and replacer functions:
 
-1. **Code blocks first** — protect code content from being parsed as markdown
-2. **Images before links** — `![alt](src)` must not be caught by `[text](url)`
-3. **Mixed formatting before individual** — `***text***` before `**text**` and `*text*`
-4. **Paragraphs before inline** — wrap plain lines in `<p>` before applying bold/italic inside them
+1. **LINK_RULE** — converts `[text](url)` to `<a>` tags (excludes `![` image syntax)
+2. **HEADER_RULE** — converts `#` through `######` to heading tags (process h6 first to avoid partial matches)
+3. **TABLE_RULE** — converts pipe-delimited tables using `TABLE_REPLACER`
+4. **LIST_RULE** — converts ordered and unordered lists using `ORDERED_LIST_REPLACER` and `UNORDERED_LIST_REPLACER`
+5. **PARAGRAPH_RULE** — wraps remaining plain text lines in `<p>` tags
+6. **FORMATTING_RULE** — applies bold (`**`), italic (`*`), and strikethrough (`~~`) replacements
 
 ### Step 4 — Handle complex replacers
 
@@ -163,18 +151,15 @@ Some rules use negative lookaheads or exclusion patterns to skip content already
 | Scenario                               | Expected                              |
 | -------------------------------------- | ------------------------------------- |
 | Empty input                            | Empty output                          |
-| Nested formatting `***~~text~~***`     | `<b><i><s>text</s></i></b>`           |
-| Code block with markdown inside        | Markdown not parsed (preserved as-is) |
 | Table with empty cells                 | Empty `<td></td>` elements            |
 | Link inside bold `**[text](url)**`     | `<b><a href="url">text</a></b>`       |
 | Multiple paragraphs                    | Each wrapped in `<p>`                 |
-| Image vs link `![img]()` vs `[link]()` | Correctly distinguished               |
+| Bold and italic in same line           | Both applied correctly                |
 
 ## Verification
 
 1. Type `# Hello` → renders as `<h1>`.
 2. Type `**bold**` → renders as bold text.
-3. Type a code block → renders with syntax highlighting preserved.
-4. Type a table → renders as HTML table.
-5. Type mixed formatting → all styles applied correctly.
-6. All parser tests pass (`bun test markdown`).
+3. Type a table → renders as HTML table.
+4. Type a list → renders as `<ul>` or `<ol>`.
+5. All parser tests pass (`bun test markdown`).

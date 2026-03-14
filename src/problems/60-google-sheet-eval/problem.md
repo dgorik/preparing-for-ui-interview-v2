@@ -59,39 +59,6 @@ The resolver looks up `B1`'s value from the `#value` map. This only works correc
 
 ### 1. Implementation Details
 
-#### `#parseNumericCellValue(id: CellId): { ok: true, n: number } | { ok: false, err: string }`
-
-This helper is the **bridge** between `evalRpn` and your engine state. It converts a cell's stored string value into a numeric result.
-
-**Logic:**
-
-```text
-  Get value from #value map for cell id
-      │
-      ▼
-  Is it empty/null/undefined?
-  ┌───┴───┐
-  │ YES   │ NO
-  │       │
-  ▼       ▼
- Return   Try parseFloat(value)
- {ok:true,│
-  n: 0}   ├── Is it NaN or is value an error string?
-          │   ┌───┴───┐
-          │   │ YES   │ NO
-          │   │       │
-          │   ▼       ▼
-          │  Return   Return
-          │  {ok:false,{ok:true,
-          │   err:value} n: parsed}
-```
-
-**Key behaviors:**
-
-- Empty cell → treat as `0` (this is how real spreadsheets work: empty cells are zero in math)
-- Valid number string → parse and return
-- Error string (like `#DIV/0!`) or non-numeric text → return error
-
 #### `_evalCell(id: CellId): string`
 
 Evaluates a single cell and returns its display value as a string.
@@ -125,8 +92,8 @@ Evaluates a single cell and returns its display value as a string.
 2. If `null` → it's a literal, just return `getRaw(id)`.
 3. If it has an `error` → return the error string (e.g., `"Syntax error"`).
 4. If it has `rpn` → call `evalRpn(rpn, resolverFn)` from the parser.
-   - The `resolverFn` is your `#parseNumericCellValue` method.
-   - `evalRpn` returns the computed result as a string.
+   - The `resolverFn` is a callback that returns the cell's current value: `(refId) => this.getValue(refId)`.
+   - `evalRpn` handles numeric parsing internally and returns the computed result as a string.
 
 ### 2. Update `setRaw`
 
@@ -156,7 +123,7 @@ Evaluating A1:
   3. _evalCell("A1"):
      - #compiled has rpn tokens
      - evalRpn([ref(B1), num(5), op(+)], resolver)
-       - resolver("B1") → value is "10" → parseFloat → 10 → {ok: true, n: 10}
+       - resolver("B1") → getValue("B1") → "10"
        - Stack: [10] → [10, 5] → [15]
      - Returns "15"
   4. #value.set("A1", "15")
@@ -167,20 +134,13 @@ Result: engine.getValue("A1") → "15" ✓
 ## Hints
 
 <details>
-<summary>💡 Hint 1: Binding the resolver</summary>
+<summary>💡 Hint 1: The resolver callback</summary>
 
-When passing `#parseNumericCellValue` to `evalRpn`, make sure `this` is correctly bound. You can use an arrow function wrapper:
+The resolver passed to `evalRpn` just needs to return the cell's string value. Numeric parsing is handled internally by `evalRpn`:
 
 ```typescript
-evalRpn(rpn, (id) => this.#parseNumericCellValue(id))
+evalRpn(rpn, (refId) => this.getValue(refId))
 ```
-
-</details>
-
-<details>
-<summary>💡 Hint 2: Error detection in parseNumericCellValue</summary>
-
-A simple way to detect error values: check if the string starts with `#` (like `#DIV/0!`, `#CYCLE!`, `#REF!`). Or simply check if `parseFloat` returns `NaN` for non-empty strings.
 
 </details>
 

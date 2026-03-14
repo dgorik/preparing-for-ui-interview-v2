@@ -3,9 +3,33 @@ import React, { useMemo } from 'react'
 import css from './markdown.module.css'
 import flex from '@course/styles'
 import cx from '@course/cx'
-
 interface MarkdownProps {
   text: string
+}
+
+/**
+ * Escapes ampersand characters for safe XML parsing.
+ *
+ * Replaces all `&` characters with `&amp;` to prevent XML parsing errors.
+ * Unescaped ampersands in XML are invalid and cause parse failures.
+ *
+ * @param text - The text to escape (optional)
+ * @returns The text with ampersands escaped, or empty string if text is undefined
+ *
+ * @example
+ * ```ts
+ * escapeHTMLAmpersand('Tom & Jerry')  // Returns: 'Tom &amp; Jerry'
+ * escapeHTMLAmpersand(undefined)       // Returns: ''
+ * ```
+ */
+function escapeHTMLAmpersand(text?: string): string {
+    return text?.replace(/&/g, '&amp;') ?? ''
+}
+
+function sanitize(markdown: string) {
+    // TODO: Implement
+    // Use DOMParser to parse escaped markdown as XML, return sanitized text
+    return markdown
 }
 
 /**
@@ -13,7 +37,6 @@ interface MarkdownProps {
  * <Markdown text="# Hello\n\nThis is **bold** and *italic*" />
  * Renders parsed markdown as React elements (not dangerouslySetInnerHTML)
  */
-
 export const Markdown = ({ text }: MarkdownProps) => {
   // Step 1: Parse markdown to HTML string — useMemo(() => parseRichText(text, RICH_TEXT_RULES), [text])
   // Step 2: Convert HTML string to DOM — new DOMParser().parseFromString(html, 'text/html')

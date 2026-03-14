@@ -1,376 +1,251 @@
-/**
- * Parses rich text by sequentially applying transformation rules.
- * Each rule modifies the text, and the result is passed to the next rule.
- * @param text - The input text to parse (typically Markdown).
- * @param rules - An array of transformation rules to apply in order.
- * @returns The transformed text (typically HTML).
- */
-export function parseRichText(text: string, rules: Array<TRichTextRule> = []) {
-  let result = text
-  for (const rule of rules) {
-    result = rule.apply(result)
-  }
-  return result
-}
+// bun test src/problems/55-markdown/markdown-parser.test.ts
 
 /**
- * A replacer for pattern matching. Can be either:
- * - A string with substitution patterns (e.g., '$1', '$2' for capture groups)
- * - A function that receives the full match and capture groups, returning the replacement string
+ * Expected input/output:
+ * parseRichText('**bold** and *italic*', RICH_TEXT_RULES)
+ * → '<p><b>bold</b> and <i>italic</i></p>'
+ *
+ * parseRichText('# Heading\n\nParagraph', RICH_TEXT_RULES)
+ * → '<h1>Heading</h1>\n<p>Paragraph</p>'
  */
+
+/* ── Pre-initialised [regexp, replacer] tuples ────────────────────────────── */
 type TRichTextPatternReplacer = ((content: string, ...groupMatch: any[]) => string) | string
+type TRichTextPatternTuple = [RegExp, TRichTextPatternReplacer]
 
-/**
- * Replacer function for unordered lists.
- * Converts Markdown unordered list items (lines starting with '- ' or '+ ') into HTML <ul><li> elements.
- * @param fullMatch - The full matched string containing all list items.
- * @returns HTML string with <ul> and <li> tags.
+/*
+ * Converts [text](url) to <a href="url">text</a>, preserving any preceding character
+ * Regex: (^|[^!])    — $1: start of string or any char except '!' (avoids matching ![img](url))
+ *        \[([^[]+)\] — $2: link text inside [ ], captured via [^[]+ (one or more non-'[' chars)
+ *        \(([^)]+)\) — $3: URL inside ( ), captured via [^)]+ (one or more non-')' chars)
  */
-const UNORDERED_LIST_REPLACER: TRichTextPatternReplacer = (fullMatch: string) => {
-  const items = fullMatch
-    .trim()
-    .split('\n')
-    .reduce((acc, next) => acc + '<li>' + next.substring(2) + '</li>', '')
-  return `\n<ul>${items}</ul>`
-}
+const LINK: TRichTextPatternTuple = [/(^|[^!])\[([^[]+)\]\(([^)]+)\)/g, '$1<a href="$3">$2</a>']
 
-/**
- * Replacer function for ordered lists.
- * Converts Markdown ordered list items (lines starting with '1. ', '2. ', etc.) into HTML <ol><li> elements.
- * @param fullMatch - The full matched string containing all numbered list items.
- * @returns HTML string with <ol> and <li> tags.
+/*
+ * Converts ###### text to <h6>text</h6> (must be matched before smaller heading levels)
+ * Regex: ^     — start of line (with /m flag)
+ *        #{6}  — exactly 6 hash characters
+ *        \s?   — optional whitespace after hashes
+ *        ([^\n]+) — $1: capture the heading text (everything until newline)
  */
-const ORDERED_LIST_REPLACER: TRichTextPatternReplacer = (fullMatch: string) => {
-  const items = fullMatch
-    .trim()
-    .split('\n')
-    .reduce((acc, next) => acc + '<li>' + next.substring(next.indexOf('.') + 2) + '</li>', '')
-  return `\n<ol>${items}</ol>`
-}
-
-/**
- * Replacer function for Markdown tables.
- * Converts Markdown table syntax into HTML <table> elements with proper thead/tbody structure.
- * @param _ - The full match (unused).
- * @param header - The header row content (pipe-separated columns).
- * @param __ - The separator row (unused, contains alignment info like |---|).
- * @param rows - The data rows content (newline-separated, pipe-separated cells).
- * @returns HTML string with complete table structure including thead/tbody.
+const HEADING_H6: TRichTextPatternTuple = [/^#{6}\s?([^\n]+)/gm, '<p>$1</p>']
+// console.log('###### Title'.replace(...HEADING_H6));
+/*
+ * Converts ##### text to <h5>text</h5>
+ * Regex: same pattern as H6 but #{5} — matched after H6 so ###### isn't caught as #####
  */
-const TABLE_REPLACER: TRichTextPatternReplacer = (
-  _: string,
-  header: string,
-  __: string,
-  rows: string,
-) => {
-  const filterEmpty = (str: string) => Boolean(str.trim())
-  const xmlHeaders: Array<string> = header
-    .split('|')
-    .filter(filterEmpty)
-    .map((header) => `<th>${header.trim()}</th>`)
-  const xmlRows: Array<string> = rows
-    .split('\n')
-    .filter(Boolean)
-    .map((row) => {
-      const cells = row
-        .split('|')
-        .filter(filterEmpty)
-        .map((cell) => `<td>${cell.trim()}</td>`)
-        .join('')
-      return `<tr>${cells}</tr>`
-    })
-  return `<table><thead><tr>${xmlHeaders.join('')}</tr></thead><tbody>${xmlRows.join('')}</tbody></table>`
-    .trim()
-    .concat('\n')
-}
-
-/**
- * Represents a single pattern-based text transformation.
- * Encapsulates a regular expression and its corresponding replacer.
+const HEADING_H5: TRichTextPatternTuple = [/^#{5}\s?([^\n]+)/gm, '<h5>$1</h5>']
+// console.log('##### Title'.replace(...HEADING_H5)) → '<h5>Title</h5>'
+/*
+ * Converts #### text to <h4>text</h4>
+ * Regex: same pattern — #{4}
  */
-class TRichTextPattern {
-  /**
-   * Creates a new pattern transformation.
-   * @param regexp - The regular expression to match against.
-   * @param replacer - The replacement string or function.
-   */
-  constructor(
-    private regexp: RegExp,
-    private replacer: TRichTextPatternReplacer,
-  ) {}
-
-  /**
-   * Applies this pattern transformation to the given text.
-   * @param text - The input text to transform.
-   * @returns The text with all matches replaced.
-   */
-  apply(text: string) {
-    const replacer = this.replacer
-    if (typeof replacer === 'string') {
-      return text.replace(this.regexp, replacer)
-    }
-    return text.replace(this.regexp, replacer)
-  }
-}
-
-/**
- * Represents a named rule containing one or more pattern transformations.
- * Rules group related patterns together and apply them sequentially.
+const HEADING_H4: TRichTextPatternTuple = [/^#{4}\s?([^\n]+)/gm, '<h4>$1</h4>']
+// console.log('#### Title'.replace(...HEADING_H4)) → '<h4>Title</h4>'
+/*
+ * Converts ### text to <h3>text</h3>
+ * Regex: same pattern — #{3}
  */
-class TRichTextRule {
-  /**
-   * Creates a new transformation rule.
-   * @param name - A descriptive name for this rule (e.g., 'bold', 'link').
-   * @param patterns - An array of patterns to apply in order.
-   */
-  constructor(
-    public name: string,
-    private patterns: TRichTextPattern[],
-  ) {}
-
-  /**
-   * Applies all patterns in this rule sequentially to the given text.
-   * @param text - The input text to transform.
-   * @returns The text after all patterns have been applied.
-   */
-  apply(text: string) {
-    return this.patterns.reduce((acc, next) => next.apply(acc), text)
-  }
-}
-
-/**
- * Rule for converting Markdown images to HTML.
- * Matches: `![alt text](data:image/png;base64,...)` syntax.
- * Outputs: `<img src="..." alt="alt text">` HTML element.
- * @example
- * // Input:  ![Logo](data:image/png;base64,iVBORw0KG...)
- * // Output: <img src="data:image/png;base64,iVBORw0KG..." alt="Logo"></img>
+const HEADING_H3: TRichTextPatternTuple = [/^#{3}\s?([^\n]+)/gm, '<h3>$1</h3>']
+// console.log('### Title'.replace(...HEADING_H3)) → '<h3>Title</h3>'
+/*
+ * Converts ## text to <h2>text</h2>
+ * Regex: same pattern — #{2}
  */
-const IMAGE_RULE = new TRichTextRule('image', [
-  new TRichTextPattern(
-    /!\[([^[]+)\]\((data:image\/png;base64),([^)]+)\)/g,
-    `<img src="$2,$3" alt="$1"></img>`,
-  ),
-])
-
-/**
- * Rule for converting Markdown links to HTML anchors.
- * Matches: `[link text](url)` syntax (excludes image links starting with !).
- * Outputs: `<a href="url">link text</a>` HTML element.
- * @example
- * // Input:  [Google](https://google.com)
- * // Output: <a href="https://google.com">Google</a>
+const HEADING_H2: TRichTextPatternTuple = [/^#{2}\s?([^\n]+)/gm, '<h2>$1</h2>']
+// console.log('## Title'.replace(...HEADING_H2)) → '<h2>Title</h2>'
+/*
+ * Converts # text to <h1>text</h1>
+ * Regex: same pattern — #{1}; matched last so ## and ### aren't caught as #
  */
-const LINK_RULE = new TRichTextRule('link', [
-  new TRichTextPattern(/(^|[^!])\[([^[]+)\]\(([^)]+)\)/g, '$1<a href="$3">$2</a>'),
-])
-
-/**
- * Rule for converting Markdown headers to HTML heading elements.
- * Matches: Lines starting with # (h1), ## (h2), or ### to ###### (converted to <p>).
- * Note: Only h1 and h2 are preserved as headings; h3-h6 become paragraphs.
- * @example
- * // Input:  # Main Title
- * // Output: <h1>Main Title</h1>
- * // Input:  ## Section
- * // Output: <h2>Section</h2>
+const HEADING_H1: TRichTextPatternTuple = [/^#{1}\s?([^\n]+)/gm, '<h1>$1</h1>']
+// console.log('# Title'.replace(...HEADING_H1)) → '<h1>Title</h1>'
+/*
+ * Wraps plain text lines (not headings or already-wrapped HTML) in <p> tags
+ * Regex: ^(?!#)       — negative lookahead: line must NOT start with # (skip headings)
+ *        (?!.*<\/?(…)>) — negative lookahead: line must NOT contain known HTML tags
+ *        (.*\S.*)$    — match the full line ($&) only if it contains at least one non-space char
+ *        Flags: /gm   — global + multiline (^ and $ match per line)
  */
-const HEADER_RULE = new TRichTextRule('header', [
-  new TRichTextPattern(/^#{6}\s?([^\n]+)/gm, '<p>$1</p>'),
-  new TRichTextPattern(/^#{5}\s?([^\n]+)/gm, '<h5>$1</h5>'),
-  new TRichTextPattern(/^#{4}\s?([^\n]+)/gm, '<h4>$1</h4>'),
-  new TRichTextPattern(/^#{3}\s?([^\n]+)/gm, '<h3>$1</h3>'),
-  new TRichTextPattern(/^#{2}\s?([^\n]+)/gm, `<h2>$1</h2>`),
-  new TRichTextPattern(/^#{1}\s?([^\n]+)/gm, `<h1>$1</h1>`),
-])
-
-/**
- * Rule for converting Markdown tables to HTML table elements.
- * Matches: Pipe-delimited table syntax with header separator row.
- * Outputs: Complete HTML table with <thead> and <tbody>.
- * @example
- * // Input:
- * // | Name | Age |
- * // |------|-----|
- * // | John | 30  |
- * // Output: <table><thead><tr><th>Name</th><th>Age</th></tr></thead><tbody><tr><td>John</td><td>30</td></tr></tbody></table>
- */
-const TABLE_RULE = new TRichTextRule('table', [
-  new TRichTextPattern(/^(\|.+\|\r?\n)(\|[-:| ]+\|\r?\n)((?:\|.*\|\r?\n?)*)/gm, TABLE_REPLACER),
-])
-
-/**
- * Rule for converting Markdown lists to HTML list elements.
- * Handles both ordered (1. 2. 3.) and unordered (- or +) lists.
- * Skips lines that already contain HTML tags to avoid double-processing.
- * @example
- * // Input:  - Item 1\n- Item 2
- * // Output: <ul><li>Item 1</li><li>Item 2</li></ul>
- * // Input:  1. First\n2. Second
- * // Output: <ol><li>First</li><li>Second</li></ol>
- */
-const LIST_RULE = new TRichTextRule('simple lists', [
-  new TRichTextPattern(/(?:^|\n)(?![^\n]*<[^>]*>)(\s*[0-9]+\.\s.*)+/g, ORDERED_LIST_REPLACER),
-  new TRichTextPattern(
-    /(?:^|\n)(?![^\n]*<[^>]*>)(\s*[-+]\s.*(?:\n\s*[-+]\s.*)*)/g,
-    UNORDERED_LIST_REPLACER,
-  ),
-])
-
-/**
- * Rule for converting combined/mixed text formatting to HTML.
- * Handles combinations of bold (***), italic (*), and strikethrough (~~) in various orders.
- * Must be processed before individual bold/italic/strikethrough rules.
- * Excludes content inside <li> and <td> elements to avoid conflicts.
- * @example
- * // Input:  ***~~text~~*** → <b><i><s>text</s></i></b>
- * // Input:  ~~***text***~~ → <s><b><i>text</i></b></s>
- * // Input:  ***text***     → <b><i>text</i></b>
- */
-const MIXED_TEXT_RULE = new TRichTextRule('mixed-text', [
-  new TRichTextPattern(
-    /\*\*\*~~\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)~~\*\*\*/g,
-    '<b><i><s>$1</s></i></b>',
-  ),
-  new TRichTextPattern(
-    /~~\*\*\*\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)\*\*\*~~/g,
-    '<s><b><i>$1</i></b></s>',
-  ),
-  new TRichTextPattern(/~~\*\*\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)\*\*~~/g, '<s><b>$1</b></s>'),
-  new TRichTextPattern(/\*\*~~\s?([^\n]+?)~~\*\*/g, '<b><s>$1</s></b>'),
-  new TRichTextPattern(/~~\*\s?([^\n]+?)\*~~/g, '<s><i>$1</i></s>'),
-  new TRichTextPattern(/\*~~\s?((?:(?!<li>|<\/li>|<td>|<\/td>).)+?)~~\*/g, '<i><s>$1</s></i>'),
-  new TRichTextPattern(/\*\*\*\s?([^\n]+?)\*\*\*/g, '<b><i>$1</i></b>'),
-])
-
-/**
- * Rule for wrapping plain text lines in paragraph tags.
- * Matches: Lines that don't start with # and don't already contain block-level HTML.
- * Skips: Headers, lists, images, tables, and existing paragraph tags.
- * @example
- * // Input:  This is plain text.
- * // Output: <p>This is plain text.</p>
- */
-const PARAGRAPH_RULE = new TRichTextRule('paragraph', [
-  new TRichTextPattern(
+const PARAGRAPH: TRichTextPatternTuple = [
     /^(?!#)(?!.*<\/?(ul|ol|img|h1|h2|p|table|tr|th|td|pre|code)>)(.*\S.*)$/gm,
     '<p>$&</p>',
-  ),
-])
+]
+// console.log('Hello world'.replace(...PARAGRAPH)) → '<p>Hello world</p>'
+/*
+ * Converts **text** to <b>text</b>
+ * Regex: \*\*  — literal ** (escaped because * is a quantifier)
+ *        (.+?) — $1: lazy match (shortest possible) of the bold content
+ *        \*\*  — closing **
+ */
+const BOLD: TRichTextPatternTuple = [/\*\*(.+?)\*\*/g, '<b>$1</b>']
+// console.log('**bold**'.replace(...BOLD)) → '<b>bold</b>'
+/*
+ * Converts *text* to <i>text</i> (applied after BOLD so ** is already consumed)
+ * Regex: \*(.+?)\* — same as BOLD but single *; works because ** was already replaced
+ */
+const ITALIC: TRichTextPatternTuple = [/\*(.+?)\*/g, '<i>$1</i>']
+// console.log('*italic*'.replace(...ITALIC))
+/*
+ * Converts ~~text~~ to <s>text</s>
+ * Regex: ~~      — literal opening ~~
+ *        \s?     — optional space after opening
+ *        ([^\n]+?) — $1: lazy match of content (no newlines)
+ *        ~~      — closing ~~
+ */
+const STRIKETHROUGH: TRichTextPatternTuple = [/~~\s?([^\n]+?)~~/g, '<s>$1</s>']
+// console.log('~~deleted~~'.replace(...STRIKETHROUGH)) → '<s>deleted</s>'
 
-/**
- * Rule for converting Markdown bold text to HTML.
- * Matches: Text wrapped in double asterisks **text**.
- * Outputs: `<b>text</b>` HTML element.
- * @example
- * // Input:  **bold text**
- * // Output: <b>bold text</b>
+/*
+ * Converts lines starting with - or + into <ul><li>...</li></ul>
+ * Regex: (?:^|\n)           — start of string or newline (non-capturing)
+ *        (?![^\n]*<[^>]*>) — negative lookahead: skip lines already containing HTML tags
+ *        \s*[-+]\s.*       — optional indent, then - or +, space, rest of line
+ *        (?:\n\s*[-+]\s.*)* — continue matching consecutive list item lines
  */
-const BOLD_RULE = new TRichTextRule('bold', [new TRichTextPattern(/\*\*(.+?)\*\*/g, '<b>$1</b>')])
+const UNORDERED_LIST: TRichTextPatternTuple = [
+    /(?:^|\n)(?![^\n]*<[^>]*>)(\s*[-+]\s.*(?:\n\s*[-+]\s.*)*)/g,
+    (fullMatch: string) => {
+        const items = fullMatch.split('\n').map(
+            v => `<li>${v.substring(2)}</li>`
+        ).join('');
+        return `\n<ul>${items}</ul>`
+    },
+]
+// console.log('- a\n- b'.replace(...UNORDERED_LIST))
 
-/**
- * Rule for converting Markdown italic text to HTML.
- * Matches: Text wrapped in single asterisks *text*.
- * Outputs: `<i>text</i>` HTML element.
- * @example
- * // Input:  *italic text*
- * // Output: <i>italic text</i>
+/*
+ * Converts lines starting with 1. 2. etc. into <ol><li>...</li></ol>
+ * Regex: (?:^|\n)           — start of string or newline
+ *        (?![^\n]*<[^>]*>) — skip lines with existing HTML
+ *        \s*[0-9]+\.\s.*   — optional indent, digits, dot, space, rest of line
+ *        (…)+               — one or more consecutive numbered lines
  */
-const ITALIC_RULE = new TRichTextRule('italic', [new TRichTextPattern(/\*(.+?)\*/g, '<i>$1</i>')])
+const ORDERED_LIST: TRichTextPatternTuple = [
+    /(?:^|\n)(?![^\n]*<[^>]*>)(\s*[0-9]+\.\s.*)+/g,
+    (fullMatch: string) => {
+        const items = fullMatch
+            .trim()
+            .split('\n')
+            .reduce((acc, next) => acc + '<li>' + next.substring(next.indexOf('.') + 2) + '</li>', '')
+        return `\n<ol>${items}</ol>`
+    },
+]
+// console.log('1. a\n2. b'.replace(...ORDERED_LIST)) → '\n<ol><li>a</li><li>b</li></ol>'
 
-/**
- * Rule for converting Markdown strikethrough text to HTML.
- * Matches: Text wrapped in double tildes ~~text~~.
- * Outputs: `<s>text</s>` HTML element.
- * @example
- * // Input:  ~~deleted text~~
- * // Output: <s>deleted text</s>
+/*
+ * Converts markdown tables (header | separator | rows) into <table> with <thead>/<tbody>
+ * Regex: ^(\|.+\|\r?\n)        — $1: header row (| col1 | col2 |\n)
+ *        (\|[-:| ]+\|\r?\n)    — $2: separator row (|---|---|\n) — dashes, colons, pipes, spaces
+ *        ((?:\|.*\|\r?\n?)*)   — $3: zero or more data rows (| val | val |\n)
+ *        Flags: /gm             — global + multiline
  */
-const STRIKETHROUGH_RULE = new TRichTextRule('strikethrough', [
-  new TRichTextPattern(/~~\s?([^\n]+?)~~/g, '<s>$1</s>'),
-])
+const TABLE: TRichTextPatternTuple = [
+    /^(\|.+\|\r?\n)(\|[-:| ]+\|\r?\n)((?:\|.*\|\r?\n?)*)/gm,
+    (_: string, header: string, __: string, rows: string) => {
+        const filterEmpty = (str: string) => Boolean(str.trim())
+        const xmlHeaders: string = header
+            .split('|')
+            .filter(filterEmpty)
+            .map(h => `<th>${h.trim()}</th>`)
+            .join('');
+        const xmlRows: string = rows
+            .split('\n')
+            .filter(Boolean)
+            .map((row) => {
+                const cells = row.split('|')
+                    .filter(filterEmpty)
+                    .map(c => `<td>${c.trim()}</td>`)
+                    .join('');
+                return `<tr>${cells}</tr>`
+            }).join('');
+        return `<table><thead><tr>${xmlHeaders}</tr></thead><tbody>${xmlRows}</tbody></table>\n`;
+    },
+]
 
-/**
- * Rule for converting Markdown code blocks to HTML.
- * Matches: Triple backticks block with optional language identifier.
- * Outputs: `<pre><code class="language-{lang}">{content}</code></pre>` HTML element.
- * @example
- * // Input:
- * // ```ts
- * // const x = 1;
- * // ```
- * // Output: <pre><code class="language-ts">const x = 1;</code></pre>
- */
-/**
- * Replacer for code blocks.
- * Escapes newlines to &#10; to prevent PARAGRAPH_RULE from breaking the block.
- * @param _ - Full match (unused)
- * @param lang - Language identifier
- * @param content - Code content
- */
-const CODE_BLOCK_REPLACER: TRichTextPatternReplacer = (
-  _: string,
-  lang: string,
-  content: string,
-) => {
-  // Remove trailing newline if present, then replace newlines with entity
-  const processedContent = content.replace(/\n$/, '').replace(/\n/g, '&#10;')
-  return `<pre><code class="language-${lang}">${processedContent}</code></pre>`
+// console.log('| H1 | H2 |\n|---|---|\n| a | b |\n'.replace(...TABLE));
+
+/* Wraps a [regexp, replacer] tuple — apply() runs text.replace(regexp, replacer) */
+class TRichTextPattern {
+    constructor(
+        public regexp: RegExp,
+        public replacer: TRichTextPatternReplacer
+    ) {
+    }
+
+    apply(source: string) {
+        return source.replace(this.regexp, this.replacer as any);
+    }
 }
 
-/**
- * Rule for converting Markdown code blocks to HTML.
- * Matches: Triple backticks block with optional language identifier.
- * Outputs: `<pre><code class="language-{lang}">{content}</code></pre>` HTML element.
- * @example
- * // Input:
- * // ```ts
- * // const x = 1;
- * // ```
- * // Output: <pre><code class="language-ts">const x = 1;</code></pre>
- */
-const CODE_BLOCK_RULE = new TRichTextRule('code-block', [
-  new TRichTextPattern(/^```(\w*)[ \t]*\n([\s\S]*?)^```/gm, CODE_BLOCK_REPLACER),
-])
+/* Groups related patterns under a named rule — apply() pipes text through each pattern sequentially */
+class TRichTextRule {
+    constructor(
+        public name: string,
+        public patterns: TRichTextPattern[]
+    ) {
+    }
 
-/**
- * Rule for converting Markdown inline code to HTML.
- * Matches: Text wrapped in single backticks `text`.
- * Outputs: `<code>text</code>` HTML element.
- * @example
- * // Input:  `inline code`
- * // Output: <code>inline code</code>
- */
-const CODE_RULE = new TRichTextRule('code', [new TRichTextPattern(/`([^`]+)`/g, '<code>$1</code>')])
+    apply(source: string) {
+        let result = source;
+        for (const pattern of this.patterns) {
+            result = pattern.apply(result);
+        }
+        return result;
+    }
+}
 
-/**
- * Complete set of Markdown-to-HTML transformation rules.
- * **ORDER MATTERS!** Rules are executed from top to bottom.
- * Each rule receives the modified HTML string from previous rules.
- *
- * Rule order rationale:
- * 1. IMAGE_RULE - Process images first (before links consume the syntax)
- * 2. LINK_RULE - Convert links before text formatting
- * 3. HEADER_RULE - Convert headers before paragraph wrapping
- * 4. TABLE_RULE - Convert tables before list processing
- * 5. LIST_RULE - Convert lists before paragraph wrapping
- * 6. MIXED_TEXT_RULE - Handle combined formatting first
- * 7. PARAGRAPH_RULE - Wrap remaining plain text
- * 8. MIXED_TEXT_RULE - Second pass for nested formatting
- * 9. BOLD_RULE, ITALIC_RULE, STRIKETHROUGH_RULE - Individual formatting
+/*
+ * RICH_TEXT_RULES — ordered pipeline of all markdown-to-HTML rules.
+ * Order matters: links before formatting, block-level (headers, tables, lists)
+ * before paragraphs, paragraphs before inline formatting (bold/italic/strikethrough).
  */
 export const RICH_TEXT_RULES: Array<TRichTextRule> = [
-  IMAGE_RULE,
-  LINK_RULE,
-  HEADER_RULE,
-  TABLE_RULE,
-  LIST_RULE,
-  CODE_BLOCK_RULE,
-  MIXED_TEXT_RULE,
-  PARAGRAPH_RULE,
-  MIXED_TEXT_RULE,
-  CODE_RULE,
-  BOLD_RULE,
-  ITALIC_RULE,
-  STRIKETHROUGH_RULE,
+    new TRichTextRule(
+        'links',
+        [new TRichTextPattern(...LINK)]
+    ),
+    new TRichTextRule(
+        'Headings',
+        [
+            new TRichTextPattern(...HEADING_H6),
+            new TRichTextPattern(...HEADING_H5),
+            new TRichTextPattern(...HEADING_H4),
+            new TRichTextPattern(...HEADING_H3),
+            new TRichTextPattern(...HEADING_H2),
+            new TRichTextPattern(...HEADING_H1)
+        ]
+    ),
+    new TRichTextRule(
+        'table',
+        [new TRichTextPattern(...TABLE)]
+    ),
+    new TRichTextRule(
+        'lists',
+        [
+            new TRichTextPattern(...UNORDERED_LIST),
+            new TRichTextPattern(...ORDERED_LIST),
+        ]
+    ),
+    new TRichTextRule(
+        'paragraphs',
+        [
+            new TRichTextPattern(...PARAGRAPH),
+        ]
+    ),
+    new TRichTextRule(
+        'formatting',
+        [
+            new TRichTextPattern(...BOLD),
+            new TRichTextPattern(...STRIKETHROUGH),
+            new TRichTextPattern(...ITALIC),
+        ]
+    ),
 ]
+
+/* Main entry point — pipes source text through each rule in order, producing final HTML */
+export function parseRichText(source: string, rules: TRichTextRule[] = RICH_TEXT_RULES) {
+    return rules
+        .reduce((text, next) => next.apply(text), source);
+}
+

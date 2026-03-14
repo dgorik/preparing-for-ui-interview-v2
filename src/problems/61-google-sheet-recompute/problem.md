@@ -37,7 +37,7 @@ Each step was built in a previous problem:
 - **19.1**: Data structures (`#raw`, `#value`, `#deps`, `#rev`)
 - **19.2**: `#compile` (tokenize → RPN) and `#setDeps` (graph sync)
 - **19.3**: `#affectedFrom` (BFS) and `#topoSort` (Kahn's algorithm)
-- **19.4**: `_evalCell` and `#parseNumericCellValue`
+- **19.4**: `_evalCell` (uses `evalRpn` with `getValue` as resolver)
 
 Now you just need to **connect them** in `#recomputeFrom`.
 
