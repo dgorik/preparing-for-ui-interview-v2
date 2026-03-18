@@ -1,8 +1,8 @@
-import { AbstractComponent } from '@course/utils'
+import { AbstractComponent } from 'src/utils/utils'
 import { getEmptyPosition, getGameState, isWin, validate } from './square-game.utility'
 import css from './square-game.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 const GAME_SIZE = 3
 

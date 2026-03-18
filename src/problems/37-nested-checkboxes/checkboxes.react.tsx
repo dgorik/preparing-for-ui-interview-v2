@@ -1,7 +1,7 @@
 import React, {useEffect, useLayoutEffect, useRef, useState} from 'react'
 import css from './checkboxes.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 type TCheckboxStatus = 'checked' | 'unchecked' | 'indeterminate';
 const [CHECKED, UNCHECKED, INDETERMINATE]: TCheckboxStatus[] = ['checked', 'unchecked', 'indeterminate']

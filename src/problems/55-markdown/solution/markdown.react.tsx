@@ -1,8 +1,8 @@
 // bun test src/problems/55-markdown/markdown-parser.test.ts
 import React, {useMemo} from 'react'
 import css from '../markdown.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility.ts'
 import {parseRichText} from "./markdown-parser.ts"
 
 interface MarkdownProps {

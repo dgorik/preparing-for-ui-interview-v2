@@ -10,8 +10,8 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import css from './toast.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 const TIMER = 3000
 

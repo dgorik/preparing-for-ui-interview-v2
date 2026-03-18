@@ -1,5 +1,5 @@
-import type {CellId, Compiled} from '../../../utilities/google-sheet-parser'
-export type { CellId } from '../../../utilities/google-sheet-parser'
+import type {CellId, Compiled} from '../../../utils/google-sheet-parser'
+export type { CellId } from '../../../utils/google-sheet-parser'
 
 /**
  * Basic spreadsheet engine that stores raw input and computed values for each cell.

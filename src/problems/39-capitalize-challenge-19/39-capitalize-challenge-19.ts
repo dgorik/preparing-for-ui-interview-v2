@@ -7,7 +7,7 @@
  * type Result = MyCapitalize<'hello'> // 'Hello'
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

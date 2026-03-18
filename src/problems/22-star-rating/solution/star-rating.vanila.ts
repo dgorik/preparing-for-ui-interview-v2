@@ -1,6 +1,6 @@
-import { AbstractComponent, type TComponentConfig } from '@course/utils'
+import { AbstractComponent, type TComponentConfig } from 'src/utils/utils'
 import styles from './star-rating.module.css'
-import flex from '@course/styles'
+import flex from 'src/utils/styles.module.css'
 
 type TStarRatingProps = {
   value: number

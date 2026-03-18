@@ -13,9 +13,13 @@
  * todo.title = "Hello" // Error: cannot reassign a readonly property
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
+
+type MyReadonly < T> = {
+  readonly [Property in keyof T]: T[Property]
+}
 
 // Your implementation here
 

@@ -1,8 +1,8 @@
 // bun test src/problems/58-google-sheet-compile/test/table-engine.test.ts
 
-import { tokenize, toRpn, type CellId, type Compiled } from '../../utilities/google-sheet-parser'
+import { tokenize, toRpn, type CellId, type Compiled } from '../../utils/google-sheet-parser'
 
-export type { CellId } from '../../utilities/google-sheet-parser'
+export type { CellId } from '../../utils/google-sheet-parser'
 
 export class TableEngine {
   /* Raw user input for each cell (e.g. "=A1+B1" or "42") */

@@ -1,11 +1,3 @@
-/**
- * Step 1: Understand TComponentConfig
- * - Generic type that extends T with component options
- * - root: the parent HTMLElement to mount into
- * - className: optional CSS classes for the container
- * - listeners: optional event types to bind (e.g., 'click', 'input')
- * - tag: optional HTML tag for the container element (default: 'div')
- */
 export type TComponentConfig<T extends object> = T & {
   root: HTMLElement
   className?: string[]
@@ -19,8 +11,6 @@ const DEFAULT_CONFIG: Partial<TComponentConfig<any>> = {
   tag: 'div',
 }
 
-type TComponentListener = { type: string; callback: EventListenerOrEventListenerObject }
-
 /**
  * @param type
  */
@@ -32,58 +22,71 @@ const toEventName = (type: string): string => {
 export abstract class AbstractComponent<T extends object> {
   container: HTMLElement | null
   config: TComponentConfig<T>
-  events: Array<TComponentListener>
+  events: Array<{ type: string; callback: EventListenerOrEventListenerObject }>
 
-  /**
-   * Step 2: Understand constructor
-   * - Merges DEFAULT_CONFIG with the provided config
-   * - Initializes container as null (created later in init)
-   * - Initializes events as an empty array
-   */
   constructor(config: TComponentConfig<T>) {
-    // TODO: implement
+    this.config = { ...DEFAULT_CONFIG, ...config }
+    this.container = null
+    this.events = []
   }
 
   /**
-   * Step 3: Implement init
-   * - Create a container element using document.createElement with config.tag
-   * - Add CSS classes from config.className to the container
-   * - For each listener in config.listeners:
-   *   - Convert type to handler name using toEventName (e.g., 'click' -> 'onClick')
-   *   - Look up the handler method on `this` by that name
-   *   - Throw an error if the handler is not implemented
-   *   - Bind the handler to `this` and attach it via addEventListener
-   *   - Store { type, callback } in this.events array
+   * Initializes the component's root element and binds event listeners.
+   * Automatically called by render().
    */
   init() {
-    // TODO: implement
+    this.container = document.createElement(this.config.tag as keyof HTMLElementTagNameMap)
+    if (this.config.className) {
+      for (const className of this.config.className) {
+        this.container.classList.add(className)
+      }
+    }
+
+    this.events = (this.config.listeners || []).map((type) => {
+      const event = toEventName(type)
+      // @ts-expect-error - we need to handle both native and custom events - event handler is not defined
+      let callback = this[event]
+      if (!callback) {
+        throw Error(`handler ${event} for ${type} is not implemented`)
+      }
+      callback = callback.bind(this)
+      this.container!.addEventListener(type, callback)
+      return { type, callback }
+    })
   }
 
+  /**
+   * Lifecycle hook invoked after the component is attached to the DOM.
+   */
   afterRender() {}
 
   /**
-   * Step 4: Implement render
-   * - If container already exists, call destroy() to clean up
-   * - Call init() to create a fresh container and bind events
-   * - Set container.innerHTML to this.toHTML()
-   * - Append the container to config.root
-   * - Call afterRender() hook
+   * Renders the component into the root element.
+   * Use toHTML() to define the template.
    */
   render() {
-    // TODO: implement
+    if (this.container) this.destroy()
+    this.init()
+    this.container!.innerHTML = this.toHTML()
+    this.config.root.appendChild(this.container!)
+    this.afterRender()
   }
 
+  /**
+   * Returns the component's HTML template string.
+   */
   toHTML(): string {
     return ``
   }
 
   /**
-   * Step 5: Implement destroy
-   * - Remove all event listeners stored in this.events from the container
-   * - Clear the events array
-   * - Remove the container from the DOM
+   * Removes the component from the DOM and cleans up event listeners.
    */
   destroy() {
-    // TODO: implement
+    this.events.forEach(({ type, callback }) => {
+      this.container!.removeEventListener(type, callback)
+    })
+    this.events = []
+    this.container!.remove()
   }
 }

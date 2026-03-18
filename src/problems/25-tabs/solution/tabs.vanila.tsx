@@ -1,6 +1,6 @@
-import { AbstractComponent, type TComponentConfig } from '@course/utils'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import { AbstractComponent, type TComponentConfig } from 'src/utils/utils'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 import css from './tabs.module.css'
 
 export type TTabProps = {

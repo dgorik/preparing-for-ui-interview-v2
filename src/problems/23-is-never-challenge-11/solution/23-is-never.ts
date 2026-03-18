@@ -10,7 +10,7 @@
  * type C = IsNever<undefined> // false
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

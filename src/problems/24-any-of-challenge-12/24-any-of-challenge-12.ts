@@ -9,13 +9,21 @@
  * type Sample2 = AnyOf<[0, "", false, [], {}]> // false (all falsy)
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 type Falsy = '' | 0 | false | undefined | null | []
 
 /* _____________ Your Code Here _____________ */
 
-type AnyOf = {}
+type IsTruthy<T> = T extends Falsy ? false : keyof T extends never ? false : true
+
+type AnyOf<T extends readonly any[]> = T extends [infer First, ...infer Tail]
+  ? IsTruthy<First> extends true
+    ? true
+    : AnyOf<Tail>
+  : false
+
+
 
 /* _____________ Test Cases _____________ */
 

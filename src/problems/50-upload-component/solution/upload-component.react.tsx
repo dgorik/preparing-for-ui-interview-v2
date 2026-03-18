@@ -1,6 +1,6 @@
 import {useState} from 'react'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 import {useFileUpload} from '../../49-use-file-upload/solution/use-upload'
 import {ProgressBar} from '../../46-progress-bar/solution/progress-bar.react'
 

@@ -15,12 +15,12 @@
  * // { title: string, completed: boolean }
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyPick<T extends {}, U extends keyof T> = {
-  [K in U]: T[K]
+type MyPick<T extends {}, K extends keyof T> = {
+  [P in K]: T[P]
 }
 
 /* _____________ Test Cases _____________ */

@@ -8,7 +8,7 @@
  * type Result = MyReturnType<typeof fn> // 1 | 2
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

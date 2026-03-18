@@ -1,8 +1,8 @@
 // bun test src/problems/57-google-sheet-basic/test/table-engine.test.ts
 
-import type { CellId } from '../../utilities/google-sheet-parser'
+import type { CellId } from '../../utils/google-sheet-parser'
 
-export type { CellId } from '../../utilities/google-sheet-parser'
+export type { CellId } from '../../utils/google-sheet-parser'
 
 export class TableEngine {
   // TODO: Step 1 - Setup Hash Maps

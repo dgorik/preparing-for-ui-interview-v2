@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import css from './calculator.module.css'
-import styles from '@course/styles'
-import cx from '@course/cx'
+import styles from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 import { BUTTONS, INVALID_VALUE } from './calculator.utils'
 

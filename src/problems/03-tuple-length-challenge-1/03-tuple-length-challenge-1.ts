@@ -12,11 +12,11 @@
  * type spaceXLength = Length<spaceX> // 5
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type Length = {};
+type Length<T extends readonly any[]> = T['length']
 
 /* _____________ Test Cases _____________ */
 

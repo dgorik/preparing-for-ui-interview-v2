@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import css from './dialog.module.css'
-import styles from '@course/styles'
-import cx from '@course/cx'
+import styles from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 type TDialogProps = {
   open: boolean

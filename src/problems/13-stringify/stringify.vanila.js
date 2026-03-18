@@ -1,0 +1,60 @@
+"use strict";
+// bun test src/problems/13-stringify/test/stringify.test.ts
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.stringify = void 0;
+var utils_ts_1 = require("../../utils/utils.ts");
+/**
+ * Converts a value to its string representation.
+ *
+ * Expected output by type:
+ * - null:      null             → "null"
+ * - number:    42               → "42"
+ * - bigint:    42n              → "42"
+ * - boolean:   true             → "true"
+ * - symbol:    Symbol('x')      → '"Symbol(x)"'
+ * - undefined: undefined        → '"undefined"'
+ * - string:    "hello"          → '"hello"'
+ * - object:    {a: 1, b: "x"}  → '{ a: 1, b: "x" }'
+ * - map:       Map{a => 1}     → '{ a: 1 }'
+ * - array:     [1, "a", true]   → '[1,"a",true]'
+ * - set:       Set{1, 2}       → '[1,2]'
+ * - date:      new Date()       → '3/7/2026, 5:47:00 PM'  (toLocaleString)
+ * - regexp:    /abc/gi          → '/abc/gi'
+ * - circular:  (ref to self)    → '[Circular]'
+ * - other:     unknown type     → '"Unsupported Type"'
+ */
+var stringify = function (a, cache) {
+    if (cache === void 0) { cache = new Set(); }
+    var type = (0, utils_ts_1.detectType)(a);
+    switch (type) {
+        case 'null':
+        case 'number':
+        case 'bigint':
+        case 'boolean':
+        case 'symbol':
+        case 'undefined':
+        case 'string':
+        case 'object':
+        case 'map':
+        case 'array':
+        case 'set':
+        case 'date':
+        case 'regexp':
+        default:
+            return '"Unsupported Type"';
+    }
+};
+exports.stringify = stringify;
+// --- Examples ---
+// Uncomment to test your implementation:
+console.log((0, exports.stringify)(null)); // Expected: null
+console.log((0, exports.stringify)(42)); // Expected: 42
+console.log((0, exports.stringify)(true)); // Expected: true
+console.log((0, exports.stringify)('hello')); // Expected: "hello"
+console.log((0, exports.stringify)([1, 'a', true])); // Expected: [1,"a",true]
+console.log((0, exports.stringify)({ a: 1, b: 'x' })); // Expected: { a: 1, b: "x" }
+console.log((0, exports.stringify)(new Date())); // Expected: 3/7/2026, 8:15:00 PM (toLocaleString)
+console.log((0, exports.stringify)(/abc/gi)); // Expected: /abc/gi
+var circular = { a: 1 };
+circular.self = circular;
+console.log((0, exports.stringify)(circular)); // Expected: { a: 1, self: [Circular] }

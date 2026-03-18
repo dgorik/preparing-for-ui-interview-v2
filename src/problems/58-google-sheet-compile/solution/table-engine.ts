@@ -1,6 +1,6 @@
-import { tokenize, toRpn, type CellId, type Compiled } from '../../../utilities/google-sheet-parser'
+import { tokenize, toRpn, type CellId, type Compiled } from '../../../utils/google-sheet-parser'
 
-export type { CellId } from '../../../utilities/google-sheet-parser'
+export type { CellId } from '../../../utils/google-sheet-parser'
 
 /**
  * Spreadsheet engine with formula compilation.

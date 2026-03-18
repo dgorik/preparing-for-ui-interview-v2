@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import css from './tooltip.module.css'
-import cx from '@course/cx'
+import cx from 'src/utils/utility'
 
 type TooltipProps = {
   position?: 'top' | 'bottom' | 'left' | 'right' | 'auto'

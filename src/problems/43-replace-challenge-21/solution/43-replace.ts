@@ -7,7 +7,7 @@
  * type replaced = Replace<'types are fun!', 'fun', 'awesome'> // 'types are awesome!'
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

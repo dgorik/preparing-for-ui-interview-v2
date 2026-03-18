@@ -10,9 +10,13 @@
  * // { id: '1', value: 4 }
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
+
+type AppendToObject <T extends {}, K extends string, V> = {
+  [Property in (keyof T) | K]: Property extends keyof T ? T[Property] : V
+}
 
 // Your implementation here
 

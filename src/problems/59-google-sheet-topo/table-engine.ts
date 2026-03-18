@@ -1,9 +1,9 @@
 // bun test src/problems/59-google-sheet-topo/test/table-engine.test.ts
 
 // @ts-ignore
-import { tokenize, toRpn, type CellId, type Compiled } from '../../utilities/google-sheet-parser'
+import { tokenize, toRpn, type CellId, type Compiled } from '../../utils/google-sheet-parser'
 
-export type { CellId } from '../../utilities/google-sheet-parser'
+export type { CellId } from '../../utils/google-sheet-parser'
 
 export class TableEngine {
   #raw: Map<CellId, string> = new Map()

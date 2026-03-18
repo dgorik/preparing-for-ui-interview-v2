@@ -5,21 +5,42 @@ export const myExtends = (SuperType: Function, SubType: Function) => {
   // Step 2: Set up prototype chain
   // Step 3: Set up static/constructor inheritance
   // Step 4: Return MyType
+
+  function ExtendedType(this: any, ...args: any[]) {
+    const target: any = Object.create(SubType.prototype)
+    SuperType.apply(target, args)
+    SubType.apply(target, args)
+    return target
+  }
+
+  Object.setPrototypeOf(SubType.prototype, SuperType.prototype)
+
+  Object.setPrototypeOf(ExtendedType, SuperType)
+
+  return ExtendedType
 }
 
 // --- Examples ---
 // Uncomment to test your implementation:
 
-// function Animal(this: any, name: string) { this.name = name }
-// Animal.prototype.greet = function () { return `Hello, ${this.name}` }
-//
-// function Dog(this: any) { this.breed = 'Labrador' }
-// Dog.prototype.bark = function () { return `${this.name} says Woof!` }
-//
-// const DogExtended = myExtends(Animal, Dog)
-// const dog = new (DogExtended as any)('Rex')
-// console.log(dog.name)    // Expected: "Rex"
-// console.log(dog.breed)   // Expected: "Labrador"
-// console.log(dog.greet()) // Expected: "Hello, Rex"
-// console.log(dog.bark())  // Expected: "Rex says Woof!"
-// console.log(dog instanceof Animal) // Expected: true
+function Animal(this: any, name: string) {
+  this.name = name
+}
+Animal.prototype.greet = function () {
+  return `Hello, ${this.name}`
+}
+
+function Dog(this: any) {
+  this.breed = 'Labrador'
+}
+Dog.prototype.bark = function () {
+  return `${this.name} says Woof!`
+}
+
+const DogExtended = myExtends(Animal, Dog)
+const dog = new (DogExtended as any)('Rex')
+console.log(dog.name) // Expected: "Rex"
+console.log(dog.breed) // Expected: "Labrador"
+console.log(dog.greet()) // Expected: "Hello, Rex"
+console.log(dog.bark()) // Expected: "Rex says Woof!"
+console.log(dog instanceof Animal) // Expected: true

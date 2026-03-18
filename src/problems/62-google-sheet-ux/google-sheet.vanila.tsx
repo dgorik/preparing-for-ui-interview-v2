@@ -1,4 +1,4 @@
-import { AbstractComponent, type TComponentConfig } from '@course/utils'
+import { AbstractComponent, type TComponentConfig } from 'src/utils/utils'
 
 export class GoogleSheet extends AbstractComponent<any> {
   constructor(config: TComponentConfig<any>) {

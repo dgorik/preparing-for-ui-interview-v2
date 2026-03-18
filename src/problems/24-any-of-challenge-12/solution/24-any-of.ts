@@ -9,7 +9,7 @@
  * type Sample2 = AnyOf<[0, "", false, [], {}]> // false (all falsy)
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

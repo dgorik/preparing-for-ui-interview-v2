@@ -1,8 +1,8 @@
 import { useLayoutEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import styles from './heatmap.module.css'
 import { HeatmapChart } from './heatmap-chart'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 export type HeatmapRef = {
   addPoint: (x: number, y: number, value: number) => void

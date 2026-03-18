@@ -11,7 +11,7 @@
  * type ResultY = MyAwaited<Y> // number
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

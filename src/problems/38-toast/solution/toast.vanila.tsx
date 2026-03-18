@@ -1,8 +1,8 @@
-import { AbstractComponent, type TComponentConfig } from '@course/utils'
+import { AbstractComponent, type TComponentConfig } from 'src/utils/utils'
 import css from './toast.module.css'
 import './toast.animations.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 export type TToastProps = {}
 

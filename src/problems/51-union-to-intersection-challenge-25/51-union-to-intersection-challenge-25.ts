@@ -8,7 +8,7 @@
  * // { a: 1 } & { b: 2 }
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

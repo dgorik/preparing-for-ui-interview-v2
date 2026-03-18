@@ -8,9 +8,9 @@ import {
   evalRpn,
   type CellId,
   type Compiled,
-} from '../../utilities/google-sheet-parser'
+} from '../../utils/google-sheet-parser'
 
-export type { CellId } from '../../utilities/google-sheet-parser'
+export type { CellId } from '../../utils/google-sheet-parser'
 
 export class TableEngine {
   #raw: Map<CellId, string> = new Map()

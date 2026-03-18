@@ -1,6 +1,6 @@
 import css from './reddit-thread.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 export interface IRedditComment {
   id: string

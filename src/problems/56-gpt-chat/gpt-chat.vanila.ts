@@ -1,7 +1,7 @@
-import { AbstractComponent, type TComponentConfig } from '@course/utils'
+import { AbstractComponent, type TComponentConfig } from 'src/utils/utils'
 import css from './gpt-chat.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 type TGPTChatProps = {
   delay?: number

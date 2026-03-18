@@ -2,8 +2,8 @@ import { SquareGame } from './solution/square-game.react'
 import { SquareGame as SquareGameStudent } from './square-game.react'
 import { GameOfThree } from './solution/square-game.vanila'
 import { useEffect, useRef } from 'react'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 // One move away from winning: just swap 8 and null
 const NEAR_WIN_STATE = [

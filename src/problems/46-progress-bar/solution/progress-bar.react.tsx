@@ -23,8 +23,8 @@ interface ProgressBarProps {
  * <ProgressBar value={75} label="Loading..." />
  * ```
  */
-import cx from '@course/cx'
-import flex from '@course/styles'
+import cx from 'src/utils/utility'
+import flex from 'src/utils/styles.module.css'
 
 export const ProgressBar = ({ value, max = 100, label }: ProgressBarProps) => {
   const percentage = Math.min(100, Math.max(0, (value / max) * 100))

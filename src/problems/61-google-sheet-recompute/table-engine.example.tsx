@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
 import { TableEngine } from './solution/table-engine'
 import css from './solution/table-engine.module.css'
-import styles from '@course/styles'
-import cx from '@course/cx'
+import styles from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 type CellData = { id: string; raw: string }
 

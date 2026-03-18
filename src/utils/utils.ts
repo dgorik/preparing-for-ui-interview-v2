@@ -73,7 +73,7 @@ export abstract class AbstractComponent<T extends object> {
 
     this.events = (this.config.listeners || []).map((type) => {
       const event = toEventName(type)
-      // @ts-expect-error - we need to handle both native and custom events - event handler is not defined
+      // @ts-ignore - dynamic event handlers are attached at runtime
       let callback = this[event]
       if (!callback) {
         throw Error(`handler ${event} for ${type} is not implemented`)

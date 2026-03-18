@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import css from './typeahead.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 import { Trie } from './trie'
 
 export type TTypeaheadEntry<T> = {

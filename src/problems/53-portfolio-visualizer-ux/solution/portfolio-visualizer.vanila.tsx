@@ -1,7 +1,7 @@
-import { AbstractComponent, type TComponentConfig } from '@course/utils'
+import { AbstractComponent, type TComponentConfig } from 'src/utils/utils'
 import css from './portfolio-visualizer.module.css'
-import cx from '@course/cx'
-import styles from '@course/styles'
+import cx from 'src/utils/utility'
+import styles from 'src/utils/styles.module.css'
 
 export type TPortfolioNode = {
   id: string

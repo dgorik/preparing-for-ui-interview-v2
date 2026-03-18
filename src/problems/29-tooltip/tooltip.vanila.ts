@@ -1,6 +1,6 @@
-import {AbstractComponent, type TComponentConfig} from '@course/utils'
+import {AbstractComponent, type TComponentConfig} from 'src/utils/utils'
 import css from './tooltip.module.css'
-import cx from '@course/cx'
+import cx from 'src/utils/utility'
 
 type TPositionType = 'top' | 'bottom' | 'left' | 'right' | 'auto'
 

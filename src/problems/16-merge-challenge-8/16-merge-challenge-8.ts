@@ -11,9 +11,13 @@
  * // { a: number; b: number; c: boolean }
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
+
+type Merge<F, S> = {
+    [P in keyof F | keyof S]: P extends keyof S ? S[P] : P extends keyof F ? F[P] : never
+  }
 
 // Your implementation here
 

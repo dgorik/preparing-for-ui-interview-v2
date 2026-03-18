@@ -1,6 +1,6 @@
 import {type CellId, TableEngine} from "../61-google-sheet-recompute/solution/table-engine.ts";
 import css from "./google-sheet.module.css";
-import cx from "@course/cx";
+import cx from "src/utils/utility.ts";
 
 export const COLS = [
     'A',

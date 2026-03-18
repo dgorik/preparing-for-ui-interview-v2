@@ -1,7 +1,7 @@
 import React, { useState, type PropsWithChildren, type ReactElement, type RefObject } from 'react'
-import flex from '@course/styles'
+import flex from 'src/utils/styles.module.css'
 import tabs from './tabs.module.css'
-import cx from '@course/cx'
+import cx from 'src/utils/utility'
 import { createPortal } from 'react-dom'
 
 type TTabProps = PropsWithChildren<{

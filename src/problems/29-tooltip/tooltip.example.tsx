@@ -3,8 +3,8 @@ import { Tooltip as TooltipStudent } from './tooltip.react'
 import { Tooltip as VanillaTooltip } from './solution/tooltip.vanila'
 import { Tooltip as VanillaTooltipStudent } from './tooltip.vanila'
 import { useEffect, useRef } from 'react'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 export function TooltipExample() {
   const autoBoundaryRef = useRef<HTMLDivElement>(null)

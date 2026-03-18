@@ -1,4 +1,4 @@
-import cx from '@course/cx'
+import cx from 'src/utils/utility'
 import css from './google-sheet.module.css'
 import {type CellId, TableEngine} from '../../61-google-sheet-recompute/solution/table-engine'
 export const COLS = [

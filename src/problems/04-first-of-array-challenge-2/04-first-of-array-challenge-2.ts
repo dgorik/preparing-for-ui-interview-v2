@@ -14,11 +14,11 @@
  * type head3 = First<arr3> // never
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type First = {};
+type First<T extends any[]> = T extends [infer F, ...any[]] ? F : never
 
 /* _____________ Test Cases _____________ */
 

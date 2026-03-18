@@ -1,6 +1,6 @@
 import css from './portfolio-visualizer.module.css'
-import cx from '@course/cx'
-import styles from '@course/styles'
+import cx from 'src/utils/utility'
+import styles from 'src/utils/styles.module.css'
 import {useState, useRef, useEffect} from 'react'
 
 export type TPortfolioNode = {

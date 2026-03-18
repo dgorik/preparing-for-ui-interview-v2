@@ -1,9 +1,9 @@
-import { AbstractComponent } from '@course/utils'
+import { AbstractComponent } from 'src/utils/utils'
 import { Trie } from './trie'
 import styles from './typeahead.module.css'
 import type { TTypeaheadEntry } from './typeahead.react'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 
 type TTypeaheadProps = {
   id?: string

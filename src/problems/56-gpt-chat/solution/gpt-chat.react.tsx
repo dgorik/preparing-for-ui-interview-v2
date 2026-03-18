@@ -1,9 +1,9 @@
 import css from './gpt-chat.module.css'
-import flex from '@course/styles'
-import cx from '@course/cx'
+import flex from 'src/utils/styles.module.css'
+import cx from 'src/utils/utility'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Markdown } from '../../55-markdown/solution/markdown.react'
-import { useMarkdownStream } from '../../../utilities/use-markdown-stream'
+import { useMarkdownStream } from '../../../utils/use-markdown-stream'
 
 export const GPTComponent = () => {
   const [chunks, setChunks] = useState<string[]>([])

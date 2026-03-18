@@ -11,7 +11,7 @@
  * type tail2 = Last<arr2> // 1
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 

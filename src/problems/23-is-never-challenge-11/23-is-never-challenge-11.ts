@@ -10,12 +10,11 @@
  * type C = IsNever<undefined> // false
  */
 
-import type { Equal, Expect } from '@course/types'
+import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type IsNever<T> = {}
-
+type IsNever<T> = [T] extends [never] ? true: false
 /* _____________ Test Cases _____________ */
 
 type cases = [
