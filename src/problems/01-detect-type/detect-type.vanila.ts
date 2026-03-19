@@ -23,17 +23,16 @@ export type TType =
   | string
 
 export const detectType = (value: any): TType => {
-  if (value == null) {
-    return `${value}`
+  if(value == null){
+    return value
   }
-  return Object.getPrototypeOf(value)?.constructor?.name.toLowerCase() ?? 'object'
+  return Object.getPrototypeOf(value).constructor.name
 }
 
-console.log(detectType(null))
+function myFn() {}
 
 // --- Examples ---
 // Uncomment to test your implementation:
-
 console.log(detectType(null)) // Expected: "null"
 console.log(detectType(undefined)) // Expected: "undefined"
 console.log(detectType(42)) // Expected: "number"
@@ -44,4 +43,5 @@ console.log(detectType({})) // Expected: "object"
 console.log(detectType(new Date())) // Expected: "date"
 console.log(detectType(new Map())) // Expected: "map"
 console.log(detectType(new Set())) // Expected: "set"
-console.log(detectType(/regex/)) // Expected: "regexp"
+console.log(detectType(/regex/))
+console.log(detectType(myFn))  // Expected: "regexp"

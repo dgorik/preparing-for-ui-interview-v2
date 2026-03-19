@@ -1,20 +1,45 @@
 // bun test src/problems/02-debounce/test/debounce.test.ts
 
-export function debounce<F extends (...args: any[]) => void>(
-  fn: F,
-  delay: number,
-): (...args: Parameters<F>) => void {
+// export function debounce<F extends (...args: any[]) => void>(
+//   fn: F,
+//   delay: number,
+// ): (...args: Parameters<F>) => void {
+//   let timeoutId: ReturnType<typeof setTimeout> | null = null
+//   return function debounced(this: unknown, ...args: Parameters<F>): void {
+//     if (timeoutId) {
+//       clearTimeout(timeoutId)
+//     }
+//     timeoutId = setTimeout((): void => {
+//       fn.apply(this, args)
+//       timeoutId = null
+//     }, delay)
+//   }
+// }
+
+export function debounce <F extends (...args: any[]) => void>(fn:F, delay:number){
   let timeoutId: ReturnType<typeof setTimeout> | null = null
-  return function debounced(this: unknown, ...args: Parameters<F>): void {
-    if (timeoutId) {
+  return function debounced(this: unknown, ...args: Parameters<F>):void{
+    if(timeoutId){
       clearTimeout(timeoutId)
     }
-    timeoutId = setTimeout((): void => {
+    timeoutId = setTimeout(() => {
       fn.apply(this, args)
       timeoutId = null
-    }, delay)
+    },delay)
   }
 }
+
+export function throttle <F extends (...args: any[]) => void>(fn: F, delay: number) {
+  let lastCallTime: number = 0
+  return function throttled(this: unknown, ...args: Parameters<F>): void {
+    const now = Date.now()
+    if (now - lastCallTime >= delay) {
+      lastCallTime = now
+      fn.apply(this, args)
+    }
+  }
+}
+
 
 // --- Examples ---
 // Uncomment to test your implementation:
