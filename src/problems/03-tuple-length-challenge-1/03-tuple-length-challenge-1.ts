@@ -16,7 +16,7 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type Length<T extends readonly any[]> = T['length']
+type Length<T extends Readonly<any[]>> = T['length']
 
 /* _____________ Test Cases _____________ */
 
