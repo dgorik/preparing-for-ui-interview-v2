@@ -23,10 +23,10 @@ export type TType =
   | string
 
 export const detectType = (value: any): TType => {
-  if(value == null){
-    return value
+  if (value == null) {
+    return 'null'
   }
-  return Object.getPrototypeOf(value).constructor.name
+  return Object.getPrototypeOf(value).constructor.name.toLowerCase()
 }
 
 function myFn() {}
@@ -44,4 +44,4 @@ console.log(detectType(new Date())) // Expected: "date"
 console.log(detectType(new Map())) // Expected: "map"
 console.log(detectType(new Set())) // Expected: "set"
 console.log(detectType(/regex/))
-console.log(detectType(myFn))  // Expected: "regexp"
+console.log(detectType(myFn)) // Expected: "regexp"

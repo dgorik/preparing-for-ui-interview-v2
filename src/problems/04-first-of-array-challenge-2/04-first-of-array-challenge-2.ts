@@ -18,7 +18,10 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type First<T extends any[]> = T extends [infer F, ...any[]] ? F : never
+type First<T extends readonly any[]> = T extends [] ? never : T[0]
+
+///second solution
+// type First <T extends any[]> = T extends [infer F, ...any[]]? F: never
 
 /* _____________ Test Cases _____________ */
 
