@@ -1,14 +1,14 @@
 // bun test src/problems/05-throttle/test/throttle.test.ts
 
-export function throttle<F extends (...args: any[]) => any>(
-  fn: F,
+export function throttle<T extends (...args: any[]) => void>(
+  fn: T,
   delay: number,
-): (...args: Parameters<F>) => void {
-  let lastCall: number = 0
-  return function (this: any, ...args: Parameters<F>): void {
-    const now: number = Date.now()
-    if (now - lastCall >= delay) {
-      lastCall = now
+): (...args: Parameters<T>) => void {
+  let lastcall: number = 0
+  return function (this: any, ...args: Parameters<T>) {
+    let now = Date.now()
+    if (now - lastcall >= delay) {
+      lastcall = now
       fn.apply(this, args)
     }
   }
