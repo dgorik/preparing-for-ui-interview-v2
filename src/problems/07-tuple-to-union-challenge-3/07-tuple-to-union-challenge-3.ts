@@ -15,6 +15,8 @@ import type { Equal, Expect } from 'src/utils/types'
 
 type TupleToUnion<T extends readonly any[]> = T[number]
 
+type TupleToUnion2<T extends readonly any[]> = T extends readonly (infer F)[] ? F : never
+
 /* _____________ Test Cases _____________ */
 
 type cases = [

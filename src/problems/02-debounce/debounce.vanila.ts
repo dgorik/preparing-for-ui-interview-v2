@@ -16,23 +16,25 @@
 //   }
 // }
 
-export function debounce<T extends (...args: any[]) => void>(
+export function debounce<T extends (...args: any) => void>(
   fn: T,
   delay: number,
 ): (...args: Parameters<T>) => void {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
 
   return function (this: any, ...args: Parameters<T>) {
-    clearTimeout(timeoutId)
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
     timeoutId = setTimeout(() => {
       fn.apply(this, args)
+      timeoutId = null
     }, delay)
   }
 }
-// --- Examples ---
-// Uncomment to test your implementation:
 
-const log = debounce((msg: string) => console.log(msg), 300)
-log('a') // cancelled by next call
-log('b') // cancelled by next call
-log('c') // only this one fires after 300ms → "c"
+const log = debounce((msg: string) => console.log(msg), 3000)
+
+log('a')
+log('b')
+log('c')

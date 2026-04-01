@@ -15,6 +15,8 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
+type Last<T extends readonly any[]> = T extends [...any[], infer F] ? F : never
+
 // Your implementation here
 
 /* _____________ Test Cases _____________ */
