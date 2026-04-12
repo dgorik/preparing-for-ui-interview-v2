@@ -18,7 +18,7 @@ import type { Equal, Expect } from 'src/utils/types'
 /* _____________ Your Code Here _____________ */
 
 type MyReadonly < T> = {
-  readonly [Property in keyof T]: T[Property]
+  readonly [P in keyof T]: T[P]
 }
 
 // Your implementation here

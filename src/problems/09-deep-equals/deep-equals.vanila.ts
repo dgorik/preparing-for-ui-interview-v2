@@ -3,27 +3,26 @@
 import { detectType } from 'src/utils/utils'
 
 export function deepEquals(a: any, b: any, cache = new Map()): boolean {
-  if (a === b || (cache.has(a) && cache.get(a) == b)) return true
+  if (a === b || (cache.has(a) && cache.get(a) === b)) return true
   const [typeA, typeB] = [detectType(a), detectType(b)]
 
-  if (typeA != typeB) return false
-
-  if (typeof a != 'object') {
-    return a == b
-  }
-
-  const [keysA, keysB] = [new Set(Object.keys(a)), new Set(Object.keys(b))]
-
-  if (keysA.symmetricDifference(keysB).size > 0) {
+  if (typeA != typeB) {
     return false
   }
 
+  if (typeA != 'object' && typeA != 'array') {
+    return false
+  }
+
+  const [keysA, keysB] = [Object.keys(a), Object.keys(b)]
+  if (keysA.length != keysB.length) return false
   cache.set(a, b)
   for (const key of keysA) {
     if (!deepEquals(a[key], b[key], cache)) {
       return false
     }
   }
+
   return true
 }
 
@@ -34,6 +33,7 @@ console.log(deepEquals(1, 1)) // Expected: true
 console.log(deepEquals('hello', 'hello')) // Expected: true
 console.log(deepEquals(null, undefined)) // Expected: false
 console.log(deepEquals([1, 2, 3], [1, 2, 3])) // Expected: true
+console.log(deepEquals([1, 2, 4], [1, 2, 3]))
 console.log(deepEquals({ a: 1, b: 2 }, { b: 2, a: 1 })) // Expected: true
 console.log(deepEquals({ a: 1 }, { a: 2 })) // Expected: false
 
