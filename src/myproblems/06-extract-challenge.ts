@@ -15,8 +15,7 @@ import type { Equal, Expect } from 'src/utils/types'
 /* _____________ Your Code Here _____________ */
 
 // Hint: Think about what to return when (T extends U) is true vs false.
-type MyExtract<T, U> = T extends U ? T: never // your implementation here
-
+type MyExtract <T, U> = T extends U? T: never
 /* _____________ Test Cases _____________ */
 
 type Status = 'active' | 'inactive' | 'pending' | 'deleted'

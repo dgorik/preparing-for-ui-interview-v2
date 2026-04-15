@@ -26,9 +26,18 @@ import type { Equal, Expect } from 'src/utils/types'
 
 type MyOmit<T, K extends keyof T> = {
   [P in Exclude<keyof T, K>]: T[P]
-  //go through the list (a union of keys) one by one. For each item call it P
-  //on the right side, we are using that P to look up the original value (string, number etc)
+  //go through T and extract its property names and place them into a union type (age | name | lastname)
+  //"here we are excluding the properties that we want to exclude. The remaining properties (the ones we are keeping) are then iterated over, with each one assigned to
+  //we then use P to look up the original type for each property (P = "name" => T[P] = "string")
 }
+
+type Umbrella = string | number
+
+type MiniUmbrella = number
+
+type Excluded = Exclude<Umbrella, MiniUmbrella>
+
+let example: Excluded = 'Daniel'
 
 /* _____________ Test Cases _____________ */
 
