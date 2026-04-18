@@ -1,15 +1,15 @@
 // bun test src/problems/05-throttle/test/throttle.test.ts
 
-export function throttle<T extends (...args: any[]) => void>(
+export default function throttle<T extends (...args: any) => void>(
   fn: T,
-  delay: number,
+  timewindow: number,
 ): (...args: Parameters<T>) => void {
-  let lastcall: number = 0
-  return function (this: any, ...args: Parameters<T>) {
+  let lastfired: number = 0
+  return function (this: unknown, ...args: Parameters<T>) {
     let now = Date.now()
-    if (now - lastcall >= delay) {
-      lastcall = now
+    if (now - timewindow > lastfired) {
       fn.apply(this, args)
+      lastfired = now
     }
   }
 }
