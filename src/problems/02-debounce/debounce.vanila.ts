@@ -16,19 +16,19 @@
 //   }
 // }
 
-export function debounce<T extends (...args: any[]) => void>(
+export default function debounce<T extends (...args: any[]) => void>(
   fn: T,
   delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
 
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     if (timeoutId) {
       clearTimeout(timeoutId)
     }
+
     timeoutId = setTimeout(() => {
       fn.apply(this, args)
-      timeoutId = null
     }, delay)
   }
 }
