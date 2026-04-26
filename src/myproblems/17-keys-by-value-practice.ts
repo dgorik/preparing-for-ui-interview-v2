@@ -28,10 +28,9 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyKeysByValue<T, ValueType> = {
-  [Key in keyof T]: T[Key] extends ValueType ? Key : never
-}[keyof T]
-
+type MyKeysByValue<T, ValueType> = keyof {
+  [Key in keyof T as T[Key] extends ValueType ? Key : never]: T[Key]
+}
 /* _____________ Test Cases _____________ */
 
 interface User {
