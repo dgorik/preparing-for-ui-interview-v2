@@ -28,7 +28,9 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyValueMatches<T, ValueType> = never
+type MyValueMatches<T, ValueType> = {
+  [Key in keyof T]: T[Key] extends ValueType ? true : false
+}
 
 /* _____________ Test Cases _____________ */
 

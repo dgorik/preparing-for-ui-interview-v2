@@ -28,9 +28,9 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyValueAt<T, Key extends keyof T> = never
+type MyValueAt<T, Key extends keyof T> = T[Key]
 
-type MyAllValues<T> = never
+type MyAllValues<T> = T[keyof T]
 
 /* _____________ Test Cases _____________ */
 

@@ -27,7 +27,9 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyRemoveKey<T, KeyToRemove extends keyof T> = never
+type MyRemoveKey<T, KeyToRemove extends keyof T> = {
+  [Key in keyof T as Key extends KeyToRemove ? never : Key]: T[Key]
+}
 
 /* _____________ Test Cases _____________ */
 
