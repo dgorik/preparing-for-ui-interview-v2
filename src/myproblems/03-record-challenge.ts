@@ -15,11 +15,12 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyRecord<K extends keyof any, V> = {
+type MyRecord<K extends PropertyKey, V> = {
   [P in K]: V
-} // your implementation here
-
+}
 /* _____________ Test Cases _____________ */
+
+type Example = MyRecord<Role, boolean>
 
 type Role = 'admin' | 'user' | 'guest'
 

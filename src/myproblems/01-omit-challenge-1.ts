@@ -24,12 +24,14 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyOmit<T, K extends keyof T> = {
-  [P in Exclude<keyof T, K>]: T[P]
-  //go through T and extract its property names and place them into a union type (age | name | lastname)
-  //"here we are excluding the properties that we want to exclude. The remaining properties (the ones we are keeping) are then iterated over, with each one assigned to
-  //we then use P to look up the original type for each property (P = "name" => T[P] = "string")
+type MyOmit<T, Value> = {
+  [Key in Exclude<keyof T, Value>]: T[Key]
 }
+//go through T and extract its property names and place them into a union type (age | name | lastname)
+//"here we are excluding the properties that we want to exclude. The remaining properties (the ones we are keeping) are then iterated over, with each one assigned to
+//we then use P to look up the original type for each property (P = "name" => T[P] = "string")
+
+type Example = MyOmit<Todo, 'description'>
 
 type Umbrella = string | number
 
@@ -62,6 +64,5 @@ interface Expected2 {
 type cases = [
   Expect<Equal<MyOmit<Todo, 'description'>, Expected1>>,
   Expect<Equal<MyOmit<Todo, 'completed' | 'createdAt'>, Expected2>>,
-  // @ts-expect-error - invalid key
   MyOmit<Todo, 'invalid'>,
 ]

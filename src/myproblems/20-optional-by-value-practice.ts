@@ -45,8 +45,6 @@ type Pretty<T> = {
   [Key in keyof T]: T[Key]
 }
 
-type Debug = Pretty<MyOptionalByValue<User, string>>
-
 /* _____________ Test Cases _____________ */
 
 interface User {
