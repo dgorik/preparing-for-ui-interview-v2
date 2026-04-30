@@ -14,12 +14,13 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-// Hint: Use T extends U ? ... : ...
-type MyExclude<T, U> = T extends U ? never : T
+export type MyExclude<T, U> = T extends U ? never : T
 
 /* _____________ Test Cases _____________ */
 
 type Status = 'active' | 'inactive' | 'pending' | 'deleted'
+
+type MyExample = MyExclude<Status, 'inactive'>
 
 type cases = [
   Expect<Equal<MyExclude<Status, 'inactive'>, 'active' | 'pending' | 'deleted'>>,

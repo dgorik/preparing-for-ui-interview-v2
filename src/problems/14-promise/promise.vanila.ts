@@ -23,10 +23,10 @@ type THandler = {
 
 export class MyPromise <T> {
 
-  value: T |null  = null
-  status: PromiseStatus = PENDING
-  handlers: THandler[] = []
-  isResolved: boolean = false
+  #handlers: THandler[] = []
+  #value: T |null  = null
+  #status: PromiseStatus = PENDING
+  #isResolved: boolean = false
 
   constructor (executor: TExecutor<T>){
 
@@ -47,8 +47,35 @@ export class MyPromise <T> {
     throw Error ('Not implemented')
   }
 
-  resolve: (value: T | Promise <T>) => void = (value: T | PromiseLike <T>) => {
+  #settle  = (value: T | any, status: PromiseStatus = FULFILLED ): void => {
+    if( this.#isResolved){
+      return
+    }
 
+    this.#isResolved = true
+    const update  = (value: T) => {
+      this.#value = value
+      this.#status = status
+      this.execute()
+    }
+    if( value instanceof MyPromise){
+      value.then(update)
+    }
+    else{
+      update(value as T)
+    }
+  }
+
+  execute = () => {
+
+  }
+
+  resolve = (value: T | PromiseLike <T>) => {
+    this.#settle(value)
+  }
+
+  reject = (reason:any) => {
+    this.#settle(reason, REJECTED)
   }
 
   catch <R>(
@@ -56,8 +83,9 @@ export class MyPromise <T> {
   ){
     return this.then(onFulfilled: null, OnRejected)
   }
-
-  {
-    throw new Error(message: "Not implemented")
-  }
 }
+
+
+const p1 = new Promise ((resolve: any) => resolve(42))
+
+console.log(p1)

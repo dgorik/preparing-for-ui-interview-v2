@@ -22,8 +22,10 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyReadonly<T> = any // replace with your implementation
-
+type MyReadonly<T> = {
+  // replace with your implementation
+  readonly [P in keyof T]: T[P]
+}
 /* _____________ Test Cases _____________ */
 
 interface Todo {
@@ -42,5 +44,10 @@ type cases = [
   Expect<Equal<MyReadonly<Todo>, Readonly<Todo>>>,
   Expect<Equal<MyReadonly<Config>, Readonly<Config>>>,
   Expect<Equal<MyReadonly<{}>, Readonly<{}>>>,
-  Expect<Equal<MyReadonly<{ a: 1; b: '2'; c: true }>, { readonly a: 1; readonly b: '2'; readonly c: true }>>,
+  Expect<
+    Equal<
+      MyReadonly<{ a: 1; b: '2'; c: true }>,
+      { readonly a: 1; readonly b: '2'; readonly c: true }
+    >
+  >,
 ]

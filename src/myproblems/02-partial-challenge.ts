@@ -20,9 +20,10 @@ import type { Equal, Expect } from 'src/utils/types'
 /* _____________ Your Code Here _____________ */
 
 type MyPartial<T> = {
-  [P in keyof T]?: T[P]
-} // your implementation here
+  [Key in keyof T]?: T[Key]
+}
 
+type Example = MyPartial<Todo>
 /* _____________ Test Cases _____________ */
 
 interface Todo {

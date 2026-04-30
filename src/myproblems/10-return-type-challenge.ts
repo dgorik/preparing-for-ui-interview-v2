@@ -20,7 +20,7 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyReturnType<T> = any // replace with your implementation
+type MyReturnType<T> = T extends (...args: any[]) => infer R ? R : never // replace with your implementation
 
 /* _____________ Test Cases _____________ */
 

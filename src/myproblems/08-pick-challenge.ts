@@ -20,8 +20,9 @@ import type { Equal, Expect } from 'src/utils/types'
 
 /* _____________ Your Code Here _____________ */
 
-type MyPick<T, K> = any // replace with your implementation
-
+type MyPick<T, K extends keyof T> = {
+  [P in K]: T[P]
+}
 /* _____________ Test Cases _____________ */
 
 interface Todo {
