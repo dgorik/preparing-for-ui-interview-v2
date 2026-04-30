@@ -24,8 +24,19 @@ type THandler = {
 export class MyPromise <T> {
 
   value: T |null  = null
-  status: PromiseStatus = 'pending'
+  status: PromiseStatus = PENDING
+  handlers: THandler[] = []
+  isResolved: boolean = false
+
   constructor (executor: TExecutor<T>){
+
+    try {
+      executor(this.resolve, this.reject)
+    }
+
+    catch(e){
+      this.reject(e)
+    }
 
   }
 
@@ -34,6 +45,10 @@ export class MyPromise <T> {
     onRejected?: OnRejected<R>
   ){
     throw Error ('Not implemented')
+  }
+
+  resolve: (value: T | Promise <T>) => void = (value: T | PromiseLike <T>) => {
+
   }
 
   catch <R>(
